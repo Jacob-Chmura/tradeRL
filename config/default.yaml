@@ -1,0 +1,4 @@
+---
+MetaArguments:
+  global_seed: 1337
+  log_file_path: trade_rl.log
