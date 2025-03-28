@@ -20,5 +20,5 @@ class MetaArguments:
 def parse_args(config_yaml: str | pathlib.Path) -> Tuple[Any, ...]:
     config_dict = yaml.safe_load(pathlib.Path(config_yaml).read_text())
 
-    meta_args = MetaArguments(config_dict['MetaArguments'])
+    meta_args = MetaArguments(**config_dict['MetaArguments'])
     return (meta_args,)
