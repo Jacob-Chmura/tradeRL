@@ -1,5 +1,5 @@
 [project]
-name = "traderl"
+name = "trade-rl"
 version = "0.1.0"
 description = "Learn to trade"
 readme = "README.md"
@@ -11,6 +11,10 @@ dependencies = [
     "numpy>=2.0.2",
     "torch>=2.6.0",
 ]
+
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
 
 [dependency-groups]
 dev = [

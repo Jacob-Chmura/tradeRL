@@ -1,2 +1,5 @@
+import logging
+
+
 def run() -> None:
-    print('foo')
+    logging.info('TODO')
