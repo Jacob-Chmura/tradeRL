@@ -8,6 +8,7 @@ authors = [
     {name="Jacob Chmura", email="jacobpaul.chmura@gmail.com"},
 ]
 dependencies = [
+    "gymnasium>=1.1.1",
     "numpy>=2.0.2",
     "torch>=2.6.0",
 ]
