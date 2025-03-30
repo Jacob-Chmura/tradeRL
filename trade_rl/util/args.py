@@ -29,6 +29,9 @@ class EnvironmentArgs:
     env_name: str = field(metadata={'help': 'Gymanasium registered environment name'})
     order_gen_args: OrderGenArgs = field(metadata={'help': 'Order generator params'})
 
+    def __post_init__(self) -> None:
+        self.order_gen_args = OrderGenArgs(**self.order_gen_args)  # type: ignore
+
 
 def parse_args(config_yaml: str | pathlib.Path) -> Tuple[Any, ...]:
     config_dict = yaml.safe_load(pathlib.Path(config_yaml).read_text())
