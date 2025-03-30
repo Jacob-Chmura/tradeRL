@@ -21,10 +21,10 @@ parser.add_argument(
 def main() -> None:
     args = parser.parse_args()
     config_file_path = get_root_dir() / args.config_file
-    meta_args, *_ = parse_args(config_file_path)
+    meta_args, env_args, *_ = parse_args(config_file_path)
     setup_basic_logging(meta_args.log_file_path)
     seed_everything(meta_args.global_seed)
-    run()
+    run(env_args)
 
 
 if __name__ == '__main__':
