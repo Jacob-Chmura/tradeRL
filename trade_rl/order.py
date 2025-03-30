@@ -4,6 +4,8 @@ import random
 from dataclasses import dataclass
 from typing import Literal
 
+from trade_rl.util.args import OrderGenArgs
+
 
 @dataclass(slots=True, frozen=True)
 class Order:
@@ -13,14 +15,12 @@ class Order:
 
 
 class OrderGenerator:
-    def __init__(self) -> None:
-        self.sym_spec = ['TSLA']
-        self.qty_spec = [10, 50]
-        self.end_time_spec = [100, 1000]
+    def __init__(self, config: OrderGenArgs) -> None:
+        self.config = config
 
     def __call__(self) -> Order:
         return Order(
-            sym=random.choice(self.sym_spec),  # type: ignore
-            qty=random.choice(self.qty_spec),
-            end_time=random.choice(self.end_time_spec),
+            sym=random.choice(self.config.sym_spec),  # type: ignore
+            qty=random.choice(self.config.qty_spec),
+            end_time=random.choice(self.config.end_time_spec),
         )

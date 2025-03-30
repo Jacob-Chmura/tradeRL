@@ -6,7 +6,7 @@ from trade_rl.util.args import EnvironmentArgs
 
 
 def run(env_args: EnvironmentArgs) -> None:
-    env = gym.make(env_args.env_name)
+    env = gym.make(env_args.env_name, config=env_args)
     agent = RandomTradingAgent(env=env)
 
     n_episodes = 5

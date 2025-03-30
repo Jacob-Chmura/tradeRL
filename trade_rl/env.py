@@ -4,16 +4,17 @@ from typing import Any, Dict, Optional, Tuple
 import gymnasium as gym
 
 from trade_rl.order import OrderGenerator
+from trade_rl.util.args import EnvironmentArgs
 
 
 class TradingEnvironment(gym.Env):
-    def __init__(self) -> None:
+    def __init__(self, config: EnvironmentArgs) -> None:
         self.action_space = gym.spaces.Discrete(2)  # Skip or Take
         self.observation_space = gym.spaces.Discrete(1)  # TODO
         logging.info(f'Created Environment')
 
         self._step = 0
-        self._order_generator = OrderGenerator()
+        self._order_generator = OrderGenerator(config.order_gen_args)
         self.order = self._order_generator()
         logging.info(f'New order: {self.order}')
 
