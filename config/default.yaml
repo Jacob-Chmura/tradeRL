@@ -1,4 +1,10 @@
 ---
-MetaArguments:
+MetaArgs:
   global_seed: 1337
   log_file_path: trade_rl.log
+EnvironmentArgs:
+  env_name: 'trade_rl/TradingEnvironment-v0'
+  order_gen_args:
+    sym_spec: ['TSLA']
+    qty_spec: [10, 50]
+    end_time_spec: [100, 100]

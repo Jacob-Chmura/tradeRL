@@ -2,10 +2,11 @@ import gymnasium as gym
 from tqdm import tqdm
 
 from trade_rl.agents import RandomTradingAgent
+from trade_rl.util.args import EnvironmentArgs
 
 
-def run() -> None:
-    env = gym.make('trade_rl/TradingEnvironment-v0')
+def run(env_args: EnvironmentArgs) -> None:
+    env = gym.make(env_args.env_name)
     agent = RandomTradingAgent(env=env)
 
     n_episodes = 5
