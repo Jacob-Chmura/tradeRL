@@ -3,7 +3,6 @@ from collections import deque, namedtuple
 from typing import Any, Deque
 
 import gymnasium as gym
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -21,7 +20,7 @@ class DQNAgent(TradingAgent):
     def __init__(self, env: gym.Env) -> None:
         super().__init__(env)
 
-        obs_dim = int(np.prod(env.observation_space.shape))  # type: ignore
+        obs_dim = int(env.observation_space.shape[0])  # type: ignore
         action_dim = int(env.action_space.n)  # type: ignore
         self.actions = env.action_space
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
