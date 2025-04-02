@@ -16,9 +16,9 @@ def agent_from_env(env: gym.Env, agent_type: str) -> TradingAgent:
         'random': RandomTradingAgent,
         'dqn': DQNAgent,
         'ppo': PPOAgent,
-        'buystart': BuyStartAgent,
-        'buylast': BuyLastAgent,
-        'buybelowarrival': BuyBelowArrivalAgent,
+        'buy_start': BuyStartAgent,
+        'buy_last': BuyLastAgent,
+        'buy_below_arrival': BuyBelowArrivalAgent,
         'linear': LinearAgent,
     }
     agent_type = agent_type.lower().strip()
