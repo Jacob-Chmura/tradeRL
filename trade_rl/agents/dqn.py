@@ -2,12 +2,12 @@ import random
 from collections import deque, namedtuple
 from typing import Any, Deque
 
-import gymnasium as gym
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from trade_rl.agents.base import TradingAgent
+from trade_rl.env import TradingEnvironment
 
 # TODO: Move to config
 LR = 2.5e-4
@@ -22,7 +22,7 @@ EPS = 0.5
 
 
 class DQNAgent(TradingAgent):
-    def __init__(self, env: gym.Env) -> None:
+    def __init__(self, env: TradingEnvironment) -> None:
         super().__init__(env)
 
         obs_dim = int(env.observation_space.shape[0])  # type: ignore
