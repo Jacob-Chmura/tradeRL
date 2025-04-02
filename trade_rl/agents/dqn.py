@@ -32,8 +32,8 @@ class DQNAgent(TradingAgent):
     def get_action(self, obs: Any) -> int:
         if random.random() < EPS:
             return self.actions.sample()
-        q_values = self.qnet(torch.Tensor(obs).to(self.device))
-        return q_values.argmax(dim=1).cpu().item()
+        obs_ = torch.Tensor(obs).to(self.device)
+        return self.qnet(obs_).argmax(dim=1).cpu().item()
 
     def update(
         self, obs: Any, action: int, reward: float, terminated: bool, next_obs: Any
@@ -50,9 +50,10 @@ class DQNAgent(TradingAgent):
         reward_ = torch.cat(batch.reward)
         done_ = torch.cat(batch.done)
 
-        q_value = self.qnet(obs_).gather(1, action_.unsqueeze(1)).squeeze()
-        target_q_value = reward_ + (1 - done_) * GAMMA * self.qnet(next_obs_).max(1)[0]
-        loss = F.mse_loss(q_value, target_q_value.detach())
+        q = self.qnet(obs_).gather(1, action_.unsqueeze(1)).squeeze()
+        with torch.no_grad():
+            target_q = reward_ + (1 - done_) * GAMMA * self.qnet(next_obs_).max(1)[0]
+        loss = F.mse_loss(q, target_q)
         self.opt.zero_grad()
         loss.backward()
         self.opt.step()
