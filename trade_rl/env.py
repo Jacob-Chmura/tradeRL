@@ -10,7 +10,7 @@ from trade_rl.util.args import EnvironmentArgs
 class TradingEnvironment(gym.Env):
     def __init__(self, config: EnvironmentArgs) -> None:
         self.action_space = gym.spaces.Discrete(2)  # Skip or Take
-        self.observation_space = gym.spaces.Discrete(1)  # TODO
+        self.observation_space = gym.spaces.Box(low=0, high=1, shape=(3,))  # TODO
         logging.info(f'Created Environment')
 
         self._step = 0
@@ -41,7 +41,7 @@ class TradingEnvironment(gym.Env):
         return obs, reward, terminated, truncated, info
 
     def _get_obs(self) -> Any:
-        return 0
+        return self.observation_space.sample()
 
     def _get_info(self) -> Dict[Any, Any]:
         return {}
