@@ -1,7 +1,7 @@
 import gymnasium as gym
 from tqdm import tqdm
 
-from trade_rl.agents.random import RandomTradingAgent
+from trade_rl.agents import RandomTradingAgent
 from trade_rl.util.args import EnvironmentArgs
 
 

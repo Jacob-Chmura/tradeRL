@@ -9,11 +9,16 @@ import torch.nn.functional as F
 
 from trade_rl.agents.base import TradingAgent
 
+# TODO: Move to config
 LR = 2.5e-4
 BUFFER_SIZE = 10_000
 GAMMA = 0.99
 BATCH_SIZE = 128
+
+# TODO: Linear schedule
 EPS = 0.5
+
+# TODO: Consider adding target net for stability
 
 
 class DQNAgent(TradingAgent):
