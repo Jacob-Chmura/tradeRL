@@ -37,12 +37,20 @@ class DQNAgent(TradingAgent):
         if random.random() < EPS:
             return self.actions.sample()
         obs_ = torch.Tensor(obs).to(self.device)
-        return self.qnet(obs_).argmax(dim=1).cpu().item()
+        with torch.no_grad():
+            return self.qnet(obs_).argmax().cpu().item()
 
     def update(
         self, obs: Any, action: int, reward: float, terminated: bool, next_obs: Any
     ) -> None:
-        self.memory.push(obs, action, next_obs, reward, terminated)
+        _tensorify = lambda x, dtype: torch.tensor(x, dtype=dtype, device=self.device)
+        obs_ = _tensorify(obs[None, :], torch.float32)
+        next_obs_ = _tensorify(next_obs[None, :], torch.float32)
+        action_ = _tensorify([action], torch.int64)
+        reward_ = _tensorify([reward], torch.float32)
+        terminated_ = _tensorify([terminated], torch.float32)
+        self.memory.push(obs_, action_, next_obs_, reward_, terminated_)
+
         if len(self.memory) < BATCH_SIZE:
             return
 
