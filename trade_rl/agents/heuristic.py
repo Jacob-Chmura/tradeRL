@@ -1,18 +1,28 @@
 from typing import Any
 
-import gymnasium as gym
-
 from trade_rl.agents.base import TradingAgent
+from trade_rl.env import TradingEnvironment
 
 
 # TODO: Implement heuristic agents
 # Heuristic agents are simple rule-based agents that do not learn from experience.
 class BuyStartAgent(TradingAgent):
-    def __init__(self, env: gym.Env) -> None:
+    def __init__(self, env: TradingEnvironment) -> None:
         super().__init__(env)
 
     def get_action(self, obs: Any) -> int:
-        return 0
+        current_step = self.env._step
+        orderQuantity = self.env.order.qty
+
+        # The agent will buy shares at the start of the episode
+        if current_step < orderQuantity:
+            self.logger.info(f'BUY a share at start step {current_step}')
+            return 1
+
+        # Skip if the order is completed
+        else:
+            self.logger.info(f'Order complete: SKIP at step {current_step}')
+            return 0
 
     def update(
         self, obs: Any, action: int, reward: float, terminated: bool, next_obs: Any
@@ -21,11 +31,23 @@ class BuyStartAgent(TradingAgent):
 
 
 class BuyLastAgent(TradingAgent):
-    def __init__(self, env: gym.Env) -> None:
+    def __init__(self, env: TradingEnvironment) -> None:
         super().__init__(env)
 
     def get_action(self, obs: Any) -> int:
-        return 0
+        current_step = self.env._step
+        orderQuantity = self.env.order.qty
+        finalTimeStep = self.env.order.end_time
+
+        # The agent will buy shares at the end of the episode
+        if current_step >= finalTimeStep - orderQuantity:
+            self.logger.info(f'BUY a share at last step {current_step}')
+            return 1
+
+        # Skip if the order is completed
+        else:
+            self.logger.info(f'Not the end: SKIP at step {current_step}')
+            return 0
 
     def update(
         self, obs: Any, action: int, reward: float, terminated: bool, next_obs: Any
@@ -34,10 +56,25 @@ class BuyLastAgent(TradingAgent):
 
 
 class LinearAgent(TradingAgent):
-    def __init__(self, env: gym.Env) -> None:
+    def __init__(self, env: TradingEnvironment) -> None:
         super().__init__(env)
 
     def get_action(self, obs: Any) -> int:
+        # Skip if the order is completed
+        if self.env.remaining_shares_to_buy <= 0:
+            self.logger.info(f'Order complete: SKIP at step {self.env._step}')
+            return 0
+
+        current_step = self.env._step
+        orderQuantity = self.env.order.qty
+        finalTimeStep = self.env.order.end_time
+
+        interval = finalTimeStep // orderQuantity
+
+        # The agent will buy shares linearly
+        if current_step % interval == 0:
+            self.logger.info(f'BUY a share at linear interval at step {current_step}')
+            return 1
         return 0
 
     def update(
@@ -47,11 +84,34 @@ class LinearAgent(TradingAgent):
 
 
 class BuyBelowArrivalAgent(TradingAgent):
-    def __init__(self, env: gym.Env) -> None:
+    def __init__(self, env: TradingEnvironment) -> None:
         super().__init__(env)
+        self.arrival_price = 0.0
 
     def get_action(self, obs: Any) -> int:
-        return 0
+        # At first step, the agent will set the arrival price
+        if self.env._step == 0:
+            # self.arrival_price = obs[0] # TODO: Get the arrival price from the observation
+            self.arrival_price = 100  # Placeholder for the arrival price
+            return 0
+
+        # Skip if the order is completed
+        if self.env.remaining_shares_to_buy <= 0:
+            self.logger.info(f'Order complete: SKIP at step {self.env._step}')
+            return 0
+
+        # price = obs[0]  # TODO: Get the price from the observation
+        price = 100  # Placeholder for the price
+        if price < self.arrival_price:
+            self.logger.info(
+                f'BUY a share below arrival price at step {self.env._step}'
+            )
+            return 1
+        else:
+            self.logger.info(
+                f'Price above arrival price: SKIP at step {self.env._step}'
+            )
+            return 0
 
     def update(
         self, obs: Any, action: int, reward: float, terminated: bool, next_obs: Any

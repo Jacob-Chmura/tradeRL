@@ -1,13 +1,13 @@
-import gymnasium as gym
 from tqdm import tqdm
 
-from trade_rl.agents import agent_from_env
+from trade_rl.agents import RandomTradingAgent
+from trade_rl.env import TradingEnvironment
 from trade_rl.util.args import EnvironmentArgs
 
 
 def run(env_args: EnvironmentArgs) -> None:
-    env = gym.make(env_args.env_name, config=env_args)
-    agent = agent_from_env(env, agent_type='random')
+    env = TradingEnvironment(config=env_args)
+    agent = RandomTradingAgent(env=env)
 
     n_episodes = 5
     for episode in tqdm(range(n_episodes)):
@@ -18,7 +18,7 @@ def run(env_args: EnvironmentArgs) -> None:
             action = agent.get_action(obs)
             next_obs, reward, terminated, truncated, info = env.step(action)
 
-            agent.update(obs, action, reward, terminated, next_obs)  # type: ignore
+            agent.update(obs, action, reward, terminated, next_obs)
 
             done = terminated or truncated
             obs = next_obs
