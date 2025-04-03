@@ -18,8 +18,6 @@ class TradingAgent(ABC):
     def get_action(self, obs: Any) -> int:
         raise NotImplementedError
 
-    @abstractmethod
     def update(
         self, obs: Any, action: int, reward: float, terminated: bool, next_obs: Any
-    ) -> None:
-        raise NotImplementedError
+    ) -> None: ...
