@@ -4,8 +4,6 @@ from trade_rl.agents.base import TradingAgent
 from trade_rl.env import TradingEnvironment
 
 
-# TODO: Implement heuristic agents
-# Heuristic agents are simple rule-based agents that do not learn from experience.
 class BuyStartAgent(TradingAgent):
     def __init__(self, env: TradingEnvironment) -> None:
         super().__init__(env)
@@ -23,11 +21,6 @@ class BuyStartAgent(TradingAgent):
         else:
             self.logger.info(f'Order complete: SKIP at step {current_step}')
             return 0
-
-    def update(
-        self, obs: Any, action: int, reward: float, terminated: bool, next_obs: Any
-    ) -> None:
-        pass
 
 
 class BuyLastAgent(TradingAgent):
@@ -48,11 +41,6 @@ class BuyLastAgent(TradingAgent):
         else:
             self.logger.info(f'Not the end: SKIP at step {current_step}')
             return 0
-
-    def update(
-        self, obs: Any, action: int, reward: float, terminated: bool, next_obs: Any
-    ) -> None:
-        pass
 
 
 class LinearAgent(TradingAgent):
@@ -76,11 +64,6 @@ class LinearAgent(TradingAgent):
             self.logger.info(f'BUY a share at linear interval at step {current_step}')
             return 1
         return 0
-
-    def update(
-        self, obs: Any, action: int, reward: float, terminated: bool, next_obs: Any
-    ) -> None:
-        pass
 
 
 class BuyBelowArrivalAgent(TradingAgent):
@@ -112,8 +95,3 @@ class BuyBelowArrivalAgent(TradingAgent):
                 f'Price above arrival price: SKIP at step {self.env._step}'
             )
             return 0
-
-    def update(
-        self, obs: Any, action: int, reward: float, terminated: bool, next_obs: Any
-    ) -> None:
-        pass

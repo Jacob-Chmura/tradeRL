@@ -10,8 +10,3 @@ class RandomTradingAgent(TradingAgent):
 
     def get_action(self, obs: Any) -> int:
         return self.env.action_space.sample()
-
-    def update(
-        self, obs: Any, action: int, reward: float, terminated: bool, next_obs: Any
-    ) -> None:
-        pass

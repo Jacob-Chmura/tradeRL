@@ -1,13 +1,13 @@
 from tqdm import tqdm
 
-from trade_rl.agents import RandomTradingAgent
+from trade_rl.agents import agent_from_env
 from trade_rl.env import TradingEnvironment
 from trade_rl.util.args import EnvironmentArgs
 
 
 def run(env_args: EnvironmentArgs) -> None:
     env = TradingEnvironment(config=env_args)
-    agent = RandomTradingAgent(env=env)
+    agent = agent_from_env(env, agent_type='random')
 
     n_episodes = 5
     for episode in tqdm(range(n_episodes)):
