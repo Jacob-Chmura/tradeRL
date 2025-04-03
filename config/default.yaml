@@ -4,6 +4,7 @@ MetaArgs:
   log_file_path: trade_rl.log
 EnvironmentArgs:
   env_name: 'trade_rl/TradingEnvironment-v0'
+  max_global_steps: 100000
   order_gen_args:
     sym_spec: ['TSLA']
     qty_spec: [10, 50]

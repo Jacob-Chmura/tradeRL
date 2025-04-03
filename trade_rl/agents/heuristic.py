@@ -49,7 +49,7 @@ class LinearAgent(TradingAgent):
 
     def get_action(self, obs: Any) -> int:
         # Skip if the order is completed
-        if self.env.remaining_shares_to_buy <= 0:
+        if self.env.remaining_qty <= 0:
             self.logger.info(f'Order complete: SKIP at step {self.env._step}')
             return 0
 
@@ -79,7 +79,7 @@ class BuyBelowArrivalAgent(TradingAgent):
             return 0
 
         # Skip if the order is completed
-        if self.env.remaining_shares_to_buy <= 0:
+        if self.env.remaining_qty <= 0:
             self.logger.info(f'Order complete: SKIP at step {self.env._step}')
             return 0
 
