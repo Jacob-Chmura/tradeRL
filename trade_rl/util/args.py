@@ -1,6 +1,6 @@
 import pathlib
 from dataclasses import dataclass, field
-from typing import Any, List, Optional, Tuple
+from typing import List, Optional
 
 import yaml  # type: ignore
 
@@ -9,6 +9,7 @@ from trade_rl.util.path import get_root_dir
 
 @dataclass(slots=True)
 class MetaArgs:
+    experiment_name: str = field(metadata={'help': 'Name of experiment'})
     log_file_path: Optional[str] = field(metadata={'help': 'Path to log file.'})
     global_seed: int = field(default=1337, metadata={'help': 'Random seed.'})
 
@@ -34,9 +35,15 @@ class EnvironmentArgs:
         self.order_gen_args = OrderGenArgs(**self.order_gen_args)  # type: ignore
 
 
-def parse_args(config_yaml: str | pathlib.Path) -> Tuple[Any, ...]:
-    config_dict = yaml.safe_load(pathlib.Path(config_yaml).read_text())
+@dataclass(slots=True)
+class Args:
+    meta: MetaArgs
+    env: EnvironmentArgs
 
-    meta_args = MetaArgs(**config_dict['MetaArgs'])
-    env_args = EnvironmentArgs(**config_dict['EnvironmentArgs'])
-    return (meta_args, env_args)
+
+def parse_args(config_yaml: str | pathlib.Path) -> Args:
+    config = yaml.safe_load(pathlib.Path(config_yaml).read_text())
+    return Args(
+        meta=MetaArgs(**config['MetaArgs']),
+        env=EnvironmentArgs(**config['EnvironmentArgs']),
+    )
