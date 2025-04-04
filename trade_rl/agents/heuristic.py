@@ -89,5 +89,5 @@ class BuyBelowArrivalAgent(TradingAgent):
             self.logger.info(f'BUY, price below arrival step {self.env.episode_step}')
             return 1
         else:
-            self.logger.info(f'SKIP, price above arriva step {self.env.episode_step}')
+            self.logger.info(f'SKIP, price above arrival step {self.env.episode_step}')
             return 0

@@ -11,12 +11,12 @@ FIELDS = ['time', 'order_id', 'global_step', 'episode', 'return']
 
 class PerfTracker:
     def __init__(self, args: Args) -> None:
-        dir = get_root_dir() / 'runs' / get_run_id(args.meta.experiment_name)
-        dir.mkdir(parents=True, exist_ok=True)
-        with open(dir / 'config.json', 'w') as f:
+        log_dir = get_root_dir() / 'runs' / get_run_id(args.meta.experiment_name)
+        log_dir.mkdir(parents=True, exist_ok=True)
+        with open(log_dir / 'config.json', 'w') as f:
             json.dump(asdict(args), f)
 
-        self.fp = open(dir / 'results.csv', 'a+', encoding='utf8')
+        self.fp = open(log_dir / 'results.csv', 'a+', encoding='utf8')
         self.writer = csv.DictWriter(self.fp, fieldnames=FIELDS)
         self.writer.writeheader()
 
