@@ -9,7 +9,7 @@ class BuyStartAgent(TradingAgent):
         super().__init__(env)
 
     def get_action(self, obs: Any) -> int:
-        current_step = self.env._step
+        current_step = self.env.episode_step
         orderQuantity = self.env.order.qty
 
         # The agent will buy shares at the start of the episode
@@ -28,7 +28,7 @@ class BuyLastAgent(TradingAgent):
         super().__init__(env)
 
     def get_action(self, obs: Any) -> int:
-        current_step = self.env._step
+        current_step = self.env.episode_step
         orderQuantity = self.env.order.qty
         finalTimeStep = self.env.order.end_time
 
@@ -50,10 +50,10 @@ class LinearAgent(TradingAgent):
     def get_action(self, obs: Any) -> int:
         # Skip if the order is completed
         if self.env.remaining_qty <= 0:
-            self.logger.info(f'Order complete: SKIP at step {self.env._step}')
+            self.logger.info(f'Order complete: SKIP at step {self.env.episode_step}')
             return 0
 
-        current_step = self.env._step
+        current_step = self.env.episode_step
         orderQuantity = self.env.order.qty
         finalTimeStep = self.env.order.end_time
 
@@ -73,25 +73,21 @@ class BuyBelowArrivalAgent(TradingAgent):
 
     def get_action(self, obs: Any) -> int:
         # At first step, the agent will set the arrival price
-        if self.env._step == 0:
+        if self.env.episode_step == 0:
             # self.arrival_price = obs[0] # TODO: Get the arrival price from the observation
             self.arrival_price = 100  # Placeholder for the arrival price
             return 0
 
         # Skip if the order is completed
         if self.env.remaining_qty <= 0:
-            self.logger.info(f'Order complete: SKIP at step {self.env._step}')
+            self.logger.info(f'Order complete: SKIP at step {self.env.episode_step}')
             return 0
 
         # price = obs[0]  # TODO: Get the price from the observation
         price = 100  # Placeholder for the price
         if price < self.arrival_price:
-            self.logger.info(
-                f'BUY a share below arrival price at step {self.env._step}'
-            )
+            self.logger.info(f'BUY, price below arrival step {self.env.episode_step}')
             return 1
         else:
-            self.logger.info(
-                f'Price above arrival price: SKIP at step {self.env._step}'
-            )
+            self.logger.info(f'SKIP, price above arriva step {self.env.episode_step}')
             return 0
