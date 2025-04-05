@@ -18,7 +18,7 @@ class TradingEnvironment(gym.Env):
         logging.info(f'Created Environment')
         self.tracker = PerfTracker(args)
 
-        # TODO: Careful about using max steps for trian/test
+        # TODO: Careful about using max steps for train/test
         self.max_global_step = args.env.max_train_steps
         self.global_step = 0
         self.episode = 0
