@@ -77,9 +77,9 @@ class DQN(nn.Module):
         self.net = nn.Sequential(
             nn.Linear(obs_dim, 64),
             nn.ReLU(),
-            nn.Linear(64, 128),
+            nn.Linear(64, 64),
             nn.ReLU(),
-            nn.Linear(128, action_dim),
+            nn.Linear(64, action_dim),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

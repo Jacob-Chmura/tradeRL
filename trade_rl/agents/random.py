@@ -4,7 +4,7 @@ from trade_rl.agents.base import TradingAgent
 from trade_rl.env import TradingEnvironment
 
 
-class RandomTradingAgent(TradingAgent):
+class RandomAgent(TradingAgent):
     def __init__(self, env: TradingEnvironment) -> None:
         super().__init__(env)
 
