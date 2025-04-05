@@ -5,7 +5,8 @@ MetaArgs:
   experiment_name: test_experiment
 EnvironmentArgs:
   env_name: 'trade_rl/TradingEnvironment-v0'
-  max_global_steps: 100000
+  max_train_steps: 100000
+  max_test_steps: 10000
   order_gen_args:
     sym_spec: ['TSLA']
     qty_spec: [10, 50]
