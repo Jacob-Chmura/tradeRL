@@ -1,6 +1,7 @@
 import gymnasium as gym
 from trade_rl.agents.base import TradingAgent
-from trade_rl.agents.random import RandomTradingAgent
+from trade_rl.agents.random import RandomAgent
+from trade_rl.agents.reinforce import ReinforceAgent
 from trade_rl.agents.dqn import DQNAgent
 from trade_rl.agents.ppo import PPOAgent
 from trade_rl.agents.heuristic import (
@@ -9,6 +10,7 @@ from trade_rl.agents.heuristic import (
     BuyBelowArrivalAgent,
     LinearAgent,
 )
+from trade_rl.agents.reinforce import ReinforceAgent
 
 
 def agent_from_env(env: gym.Env, agent_type: str) -> TradingAgent:
@@ -19,7 +21,8 @@ def agent_from_env(env: gym.Env, agent_type: str) -> TradingAgent:
         'dqn': DQNAgent,
         'linear': LinearAgent,
         'ppo': PPOAgent,
-        'random': RandomTradingAgent,
+        'random': RandomAgent,
+        'reinforce': ReinforceAgent,
     }
     agent_type = agent_type.lower().strip()
     if agent_type not in agent_type_to_class:
