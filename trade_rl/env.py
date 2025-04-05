@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict, Optional, Tuple
 
 import gymnasium as gym
-import pandas as pd
+import numpy as np
 
 from trade_rl.order import Order, OrderGenerator
 from trade_rl.util.args import Args
@@ -26,7 +26,9 @@ class TradingEnvironment(gym.Env):
 
         self.data = data
         self.order_generator = OrderGenerator(args.env.order_gen_args)
-        self.order, self.order_data, self.start_index = self._new_order()
+        self.order, self.order_data, self.start_index, self.max_steps = (
+            self._new_order()
+        )
         self.remaining_qty = self.order.qty
 
     def reset(
@@ -34,16 +36,17 @@ class TradingEnvironment(gym.Env):
     ) -> Tuple[Any, ...]:
         super().reset(seed=seed)
         self.tracker(self)
-        self.order, self.order_data, self.start_index = self._new_order()
+        self.order, self.order_data, self.start_index, self.max_steps = (
+            self._new_order()
+        )
         return self._get_obs(), self._get_info()
 
     def step(self, action: int) -> Tuple[Any, ...]:
         self.remaining_qty -= action
-        terminated = self.episode_step >= self.order.end_time or self.remaining_qty == 0
+        terminated = self.episode_step >= self.max_steps or self.remaining_qty == 0
         truncated = False
         reward = 0 if terminated else -self.remaining_qty
         obs, info = self._get_obs(), self._get_info()
-
         self.global_step += 1
         self.episode_step += 1
         return obs, reward, terminated, truncated, info
@@ -57,12 +60,12 @@ class TradingEnvironment(gym.Env):
             'max_global_step': self.max_global_step,
         }
 
-    def _new_order(self) -> Tuple[Order, pd.DataFrame, int]:
+    def _new_order(self) -> Tuple[Order, np.ndarray, int, int]:
         self.episode += 1
         self.episode_step = self.episode_return = 0
         order = self.order_generator()
-        order_data, start_index = self.data.get_order_data(
+        order_data, start_index, max_steps = self.data.get_order_data(
             order.start_time, order.end_time
         )
         logging.debug(f'New order: {order}')
-        return order, order_data, start_index
+        return order, order_data, start_index, max_steps

@@ -23,7 +23,9 @@ class OrderGenerator:
 
     def __call__(self) -> Order:
         return Order(
-            start_time=random.randint(60 * 5, 23400 - 60 * 5),
+            # data doesn't always adhere to 1s time steps, less than 23400s in a trading day,
+            # put a placeholder for now
+            start_time=random.randint(60 * 5, 60 * 100),
             order_id=str(uuid.uuid4()),
             sym=random.choice(self.config.sym_spec),  # type: ignore
             qty=random.choice(self.config.qty_spec),

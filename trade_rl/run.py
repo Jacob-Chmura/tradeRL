@@ -7,7 +7,7 @@ from trade_rl.util.data import Data
 
 
 def run(args: Args) -> None:
-    data = Data('data')
+    data = Data('data/TSLA/OCHLV')
     env = TradingEnvironment(args, data)
     agent = agent_from_env(env, agent_type='random')
     with tqdm(total=args.env.max_global_steps) as pbar:
