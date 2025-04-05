@@ -10,11 +10,11 @@ from trade_rl.util.args import OrderGenArgs
 
 @dataclass(slots=True, frozen=True)
 class Order:
-    start_time: int
     order_id: str
+    start_time: int
+    end_time: int
     sym: Literal['TSLA']
     qty: int
-    end_time: int
 
 
 class OrderGenerator:
@@ -23,11 +23,10 @@ class OrderGenerator:
 
     def __call__(self) -> Order:
         return Order(
-            # data doesn't always adhere to 1s time steps, less than 23400s in a trading day,
-            # put a placeholder for now
-            start_time=random.randint(60 * 5, 60 * 100),
             order_id=str(uuid.uuid4()),
+            # data doesn't always adhere to 1s time steps, less than 23400s in a trading day,
+            start_time=random.choice(self.config.start_time_spec),
+            end_time=random.choice(self.config.end_time_spec),
             sym=random.choice(self.config.sym_spec),  # type: ignore
             qty=random.choice(self.config.qty_spec),
-            end_time=random.choice(self.config.end_time_spec),
         )

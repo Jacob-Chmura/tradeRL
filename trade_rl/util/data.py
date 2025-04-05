@@ -1,4 +1,5 @@
 import glob
+import logging
 import os
 import random
 from typing import Tuple
@@ -14,7 +15,11 @@ class Data:
         if not files:
             raise ValueError('Data not found')
 
+        logging.debug(f'Reading raw data files: {files}')
         self.data = pd.concat([pd.read_parquet(file) for file in files])
+        logging.debug(
+            f'Read {self.data.memory_usage(deep=True).sum() / 1e9} GB ({len(self.data)} rows)'
+        )
         self.data['ts_event'] = pd.to_datetime(self.data['ts_event'])
         self.data['date'] = self.data['ts_event'].dt.date
         self.unique_days = self.data['date'].unique()
@@ -28,11 +33,12 @@ class Data:
         day_data.reset_index(drop=True, inplace=True)
         available_rows = len(day_data)
 
-        if start_time < 0 or start_time >= available_rows:
-            raise ValueError(f'start_time out of range')
+        if not 0 <= start_time < available_rows:
+            raise ValueError(
+                f'Order starts at {start_time} but only {available_rows} data samples available for date: {chosen_date}'
+            )
         if start_time + end_time > available_rows:
             end_time = available_rows - start_time
 
         data_chunk = day_data.iloc[: start_time + end_time].to_numpy()
-
         return data_chunk, start_time - 1, end_time
