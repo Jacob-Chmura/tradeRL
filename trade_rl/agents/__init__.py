@@ -10,7 +10,6 @@ from trade_rl.agents.heuristic import (
     BuyBelowArrivalAgent,
     LinearAgent,
 )
-from trade_rl.agents.reinforce import ReinforceAgent
 
 
 def agent_from_env(env: gym.Env, agent_type: str) -> TradingAgent:
