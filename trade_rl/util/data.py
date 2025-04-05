@@ -29,8 +29,8 @@ class Data:
             raise ValueError(f'start_time out of range')
         if end_time <= start_time:
             raise ValueError('end_time must be greater than start_time')
-        if end_time > available_rows:
-            end_time = available_rows
+        if start_time + end_time > available_rows:
+            end_time = available_rows - start_time
 
         data_chunk = day_data.iloc[: start_time + end_time].reset_index(drop=True)
 
