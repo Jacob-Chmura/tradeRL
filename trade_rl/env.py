@@ -2,14 +2,16 @@ import logging
 from typing import Any, Dict, Optional, Tuple
 
 import gymnasium as gym
+import pandas as pd
 
 from trade_rl.order import Order, OrderGenerator
 from trade_rl.util.args import Args
+from trade_rl.util.data import Data
 from trade_rl.util.perf import PerfTracker
 
 
 class TradingEnvironment(gym.Env):
-    def __init__(self, args: Args) -> None:
+    def __init__(self, args: Args, data: Data) -> None:
         super().__init__()
         self.action_space = gym.spaces.Discrete(2)  # Skip or Take
         self.observation_space = gym.spaces.Box(low=0, high=1, shape=(3,))  # TODO
@@ -22,8 +24,9 @@ class TradingEnvironment(gym.Env):
         self.episode_step = 0
         self.episode_return = 0
 
+        self.data = data
         self.order_generator = OrderGenerator(args.env.order_gen_args)
-        self.order = self._new_order()
+        self.order, self.order_data, self.start_index = self._new_order()
         self.remaining_qty = self.order.qty
 
     def reset(
@@ -31,14 +34,14 @@ class TradingEnvironment(gym.Env):
     ) -> Tuple[Any, ...]:
         super().reset(seed=seed)
         self.tracker(self)
-        self.order = self._new_order()
+        self.order, self.order_data, self.start_index = self._new_order()
         return self._get_obs(), self._get_info()
 
     def step(self, action: int) -> Tuple[Any, ...]:
         self.remaining_qty -= action
         terminated = self.episode_step >= self.order.end_time or self.remaining_qty == 0
         truncated = False
-        reward = 1 if terminated else 0
+        reward = 0 if terminated else -self.remaining_qty
         obs, info = self._get_obs(), self._get_info()
 
         self.global_step += 1
@@ -46,7 +49,7 @@ class TradingEnvironment(gym.Env):
         return obs, reward, terminated, truncated, info
 
     def _get_obs(self) -> Any:
-        return self.observation_space.sample()
+        return self.order_data[self.start_index + self.episode_step]
 
     def _get_info(self) -> Dict[Any, Any]:
         return {
@@ -54,9 +57,12 @@ class TradingEnvironment(gym.Env):
             'max_global_step': self.max_global_step,
         }
 
-    def _new_order(self) -> Order:
+    def _new_order(self) -> Tuple[Order, pd.Dataframe, int]:
         self.episode += 1
         self.episode_step = self.episode_return = 0
         order = self.order_generator()
+        order_data, start_index = self.data.get_order_data(
+            order.start_time, order.end_time
+        )
         logging.debug(f'New order: {order}')
-        return order
+        return order, order_data, start_index

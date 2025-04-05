@@ -10,6 +10,7 @@ from trade_rl.util.args import OrderGenArgs
 
 @dataclass(slots=True, frozen=True)
 class Order:
+    start_time: int
     order_id: str
     sym: Literal['TSLA']
     qty: int
@@ -22,6 +23,7 @@ class OrderGenerator:
 
     def __call__(self) -> Order:
         return Order(
+            start_time=random.randint(60 * 5, 23400 - 60 * 5),
             order_id=str(uuid.uuid4()),
             sym=random.choice(self.config.sym_spec),  # type: ignore
             qty=random.choice(self.config.qty_spec),
