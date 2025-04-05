@@ -57,7 +57,7 @@ class TradingEnvironment(gym.Env):
             'max_global_step': self.max_global_step,
         }
 
-    def _new_order(self) -> Tuple[Order, pd.Dataframe, int]:
+    def _new_order(self) -> Tuple[Order, pd.DataFrame, int]:
         self.episode += 1
         self.episode_step = self.episode_return = 0
         order = self.order_generator()
