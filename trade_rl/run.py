@@ -8,14 +8,32 @@ from trade_rl.util.args import Args
 def run(args: Args) -> None:
     env = TradingEnvironment(args)
     agent = agent_from_env(env, agent_type='random')
-    with tqdm(total=args.env.max_global_steps) as pbar:
-        while env.global_step < args.env.max_global_steps:
+    with tqdm(total=args.env.max_train_steps) as pbar:
+        while env.global_step < args.env.max_train_steps:
             obs, info = env.reset()
             done = False
             while not done:
                 action = agent.get_action(obs)
                 next_obs, reward, terminated, truncated, info = env.step(action)
                 agent.update(obs, action, reward, terminated, next_obs)
+                done = terminated or truncated
+                obs = next_obs
+
+                pbar.update(1)
+
+    # TODO: Make sure agent is in 'eval' mode
+    # TODO: Ensure perf tracker is aware of the fact we are in eval mode
+    # TODO: Load agent model state dict
+    # TODO: Configure environment (data file) to differente train/test
+    env = TradingEnvironment(args)
+    agent = agent_from_env(env, agent_type='random')
+    with tqdm(total=args.env.max_test_steps) as pbar:
+        while env.global_step < args.env.max_test_steps:
+            obs, info = env.reset()
+            done = False
+            while not done:
+                action = agent.get_action(obs)
+                next_obs, reward, terminated, truncated, info = env.step(action)
                 done = terminated or truncated
                 obs = next_obs
 

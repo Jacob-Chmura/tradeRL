@@ -28,7 +28,8 @@ class OrderGenArgs:
 @dataclass(slots=True)
 class EnvironmentArgs:
     env_name: str = field(metadata={'help': 'Gymanasium registered environment name'})
-    max_global_steps: int = field(metadata={'help': 'Total number of steps to run for'})
+    max_train_steps: int = field(metadata={'help': 'Total train steps to run for'})
+    max_test_steps: int = field(metadata={'help': 'Total test steps to run for'})
     order_gen_args: OrderGenArgs = field(metadata={'help': 'Order generator params'})
 
     def __post_init__(self) -> None:
