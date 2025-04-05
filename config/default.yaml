@@ -10,4 +10,5 @@ EnvironmentArgs:
   order_gen_args:
     sym_spec: ['TSLA']
     qty_spec: [10, 50]
-    end_time_spec: [100, 100]
+    start_time_spec: [300, 1800, 9000, 18000] # 9:35, 10:00, 12:00, 2:30
+    end_time_spec: [60, 600, 3600] # 1 minute, 10 minutes, 1 hour duration

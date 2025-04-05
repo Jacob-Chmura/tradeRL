@@ -22,6 +22,7 @@ class MetaArgs:
 class OrderGenArgs:
     sym_spec: List[str]
     qty_spec: List[int]
+    start_time_spec: List[int]
     end_time_spec: List[int]
 
 
