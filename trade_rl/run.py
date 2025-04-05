@@ -3,10 +3,12 @@ from tqdm import tqdm
 from trade_rl.agents import agent_from_env
 from trade_rl.env import TradingEnvironment
 from trade_rl.util.args import Args
+from trade_rl.util.data import Data
 
 
 def run(args: Args) -> None:
-    env = TradingEnvironment(args)
+    data = Data('data/TSLA/OCHLV')
+    env = TradingEnvironment(args, data)
     agent = agent_from_env(env, agent_type='random')
     with tqdm(total=args.env.max_global_steps) as pbar:
         while env.global_step < args.env.max_global_steps:
