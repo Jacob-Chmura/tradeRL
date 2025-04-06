@@ -74,8 +74,7 @@ class BuyBelowArrivalAgent(TradingAgent):
     def get_action(self, obs: Any) -> int:
         # At first step, the agent will set the arrival price
         if self.env.episode_step == 0:
-            # self.arrival_price = obs[0] # TODO: Get the arrival price from the observation
-            self.arrival_price = 100  # Placeholder for the arrival price
+            self.arrival_price = self.env.order_data['open'][self.env.start_index]
             return 0
 
         # Skip if the order is completed
@@ -83,8 +82,8 @@ class BuyBelowArrivalAgent(TradingAgent):
             self.logger.info(f'Order complete: SKIP at step {self.env.episode_step}')
             return 0
 
-        # price = obs[0]  # TODO: Get the price from the observation
-        price = 100  # Placeholder for the price
+        current_index = self.env.start_index + self.env.episode_step
+        price = self.env.order_data['open'][current_index]
         if price < self.arrival_price:
             self.logger.info(f'BUY, price below arrival step {self.env.episode_step}')
             return 1
