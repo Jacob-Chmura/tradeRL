@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 import gymnasium as gym
-import numpy as np
+import pandas as pd
 
 from trade_rl.order import Order, OrderGenerator
 from trade_rl.util.args import Args
@@ -46,9 +46,9 @@ class TradingEnvironment(gym.Env):
 
     def step(self, action: int) -> Tuple[Any, ...]:
         if action:
-            current_index = self.start_index + self.episode_step
-            current_price = self.order_data['close'][current_index]
-            self.portfolio.append((current_price, self.episode_step))
+            price = self.order_data['close'].iloc[self.start_index + self.episode_step]
+            self.portfolio.append((price, self.episode_step))
+
         self.remaining_qty -= action
         terminated = self.episode_step >= self.max_steps or self.remaining_qty == 0
         truncated = False
@@ -59,7 +59,7 @@ class TradingEnvironment(gym.Env):
         return obs, reward, terminated, truncated, info
 
     def _get_obs(self) -> Any:
-        return self.order_data[self.start_index + self.episode_step]
+        return self.order_data.iloc[self.start_index + self.episode_step]
 
     def _get_info(self) -> Dict[Any, Any]:
         return {
@@ -67,7 +67,7 @@ class TradingEnvironment(gym.Env):
             'max_global_step': self.max_global_step,
         }
 
-    def _new_order(self) -> Tuple[Order, np.ndarray, int, int]:
+    def _new_order(self) -> Tuple[Order, pd.DataFrame, int, int]:
         self.episode += 1
         self.episode_step = self.episode_return = 0
         self.portfolio = []
