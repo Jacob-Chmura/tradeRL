@@ -7,8 +7,8 @@ from trade_rl.util.data import Data
 
 
 def run(args: Args) -> None:
-    data = Data('data/TSLA/OCHLV')
-    env = TradingEnvironment(args, data)
+    train_data = Data('data/TSLA/OCHLV/train.parquet')
+    env = TradingEnvironment(args, train_data)
     agent = agent_from_env(env, agent_type='random')
     with tqdm(total=args.env.max_train_steps) as pbar:
         while env.global_step < args.env.max_train_steps:
@@ -26,8 +26,8 @@ def run(args: Args) -> None:
     # TODO: Make sure agent is in 'eval' mode
     # TODO: Ensure perf tracker is aware of the fact we are in eval mode
     # TODO: Load agent model state dict
-    # TODO: Configure environment (data file) to different train/test
-    env = TradingEnvironment(args, data)
+    test_data = Data('data/TSLA/OCHLV/test.parquet')
+    env = TradingEnvironment(args, test_data)
     agent = agent_from_env(env, agent_type='random')
     with tqdm(total=args.env.max_test_steps) as pbar:
         while env.global_step < args.env.max_test_steps:
