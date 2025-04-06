@@ -4,7 +4,6 @@ import os
 import random
 from typing import Tuple
 
-import numpy as np
 import pandas as pd
 
 
@@ -26,7 +25,7 @@ class Data:
 
     def get_order_data(
         self, start_time: int, end_time: int
-    ) -> Tuple[np.ndarray, int, int]:
+    ) -> Tuple[pd.DataFrame, int, int]:
         chosen_date = random.choice(self.unique_days)
 
         day_data = self.data[self.data['date'] == chosen_date].copy()
@@ -40,5 +39,6 @@ class Data:
         if start_time + end_time > available_rows:
             end_time = available_rows - start_time
 
-        data_chunk = day_data.iloc[: start_time + end_time].to_numpy()
+        data_chunk = day_data.iloc[: start_time + end_time]
+
         return data_chunk, start_time - 1, end_time

@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import gymnasium as gym
 import numpy as np
@@ -25,6 +25,8 @@ class TradingEnvironment(gym.Env):
         self.episode_step = 0
         self.episode_return = 0
 
+        self.portfolio: List[Tuple[float, int]] = []
+
         self.data = data
         self.order_generator = OrderGenerator(args.env.order_gen_args)
         self.order, self.order_data, self.start_index, self.max_steps = (
@@ -43,6 +45,10 @@ class TradingEnvironment(gym.Env):
         return self._get_obs(), self._get_info()
 
     def step(self, action: int) -> Tuple[Any, ...]:
+        if action:
+            current_index = self.start_index + self.episode_step
+            current_price = self.order_data['close'][current_index]
+            self.portfolio.append((current_price, self.episode_step))
         self.remaining_qty -= action
         terminated = self.episode_step >= self.max_steps or self.remaining_qty == 0
         truncated = False
@@ -64,6 +70,7 @@ class TradingEnvironment(gym.Env):
     def _new_order(self) -> Tuple[Order, np.ndarray, int, int]:
         self.episode += 1
         self.episode_step = self.episode_return = 0
+        self.portfolio = []
         order = self.order_generator()
         order_data, start_index, max_steps = self.data.get_order_data(
             order.start_time, order.end_time
