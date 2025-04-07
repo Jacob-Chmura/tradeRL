@@ -3,10 +3,19 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import gymnasium as gym
 import pandas as pd
+import torch
 
 from trade_rl.order import Order, OrderGenerator
 from trade_rl.util.args import Args
 from trade_rl.util.data import Data
+from trade_rl.util.feature_engineering import (
+    get_elapsed_time_percentage,
+    get_return,
+    get_tleft_norm,
+    get_vleft_norm,
+    get_volume_norm,
+    get_vwap_norm,
+)
 from trade_rl.util.perf import PerfTracker
 
 
@@ -77,3 +86,47 @@ class TradingEnvironment(gym.Env):
         )
         logging.debug(f'New order: {order}')
         return order, order_data, start_index, max_steps
+
+    def _compute_feature_vector(self) -> torch.Tensor:
+        # Price features
+        current_index = self.start_index + self.episode_step
+        current_price = self.order_data['open'][current_index]
+        all_current_day_prices = self.order_data['open'][: current_index + 1]
+        max_day_price = max(all_current_day_prices)
+        min_day_price = min(all_current_day_prices)
+        previous_price = self.order_data['open'][current_index - 1]
+        episode_first_price = self.order_data['open'][self.start_index]
+        day_first_price = self.order_data['open'][0]
+        current_market_vwap = self.order_data['vwap'][current_index - 1]
+
+        # Time features
+        market_seconds = self.order_data['market_second'][current_index]
+
+        # Volume features
+        prev_volume = self.order_data['volume'][current_index - 1]
+        volume_sma = self.order_data['volume_sma'][current_index - 1]
+
+        return torch.tensor(
+            [
+                get_vleft_norm(self.remaining_qty, self.order),
+                get_tleft_norm(self.episode_step, self.order),
+                get_return(previous_price, current_price),
+                get_return(day_first_price, current_price),
+                get_return(episode_first_price, current_price),
+                get_return(max_day_price, current_price),
+                get_return(min_day_price, current_price),
+                get_elapsed_time_percentage(market_seconds),
+                get_vwap_norm(self.portfolio, current_market_vwap),
+                get_volume_norm(prev_volume, volume_sma),
+                self.order_data['sma_return_short'][current_index],
+                self.order_data['sma_return_long'][current_index],
+                self.order_data['ema_return_short'][current_index],
+                self.order_data['ema_return_long'][current_index],
+                self.order_data['macd'][current_index],
+                self.order_data['signal'][current_index],
+                self.order_data['volatility'][current_index],
+                self.order_data['rsi'][current_index],
+                self.order_data['bollinger_percentage'][current_index],
+                self.order_data['stoch_k'][current_index],
+            ]
+        )

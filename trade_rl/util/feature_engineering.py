@@ -2,9 +2,7 @@ from typing import List
 
 import numpy as np
 import pandas as pd
-import torch
 
-from trade_rl.env import TradingEnvironment
 from trade_rl.order import Order
 
 # TODO: Move to config
@@ -63,51 +61,6 @@ def preprocess_data(data: pd.DataFrame) -> pd.DataFrame:
     df['volume_sma'] = df['volume'].rolling(window=LONG_WINDOW).mean()
 
     return df
-
-
-def computeFeatureVector(env: 'TradingEnvironment') -> torch.Tensor:
-    # Price features
-    current_index = env.start_index + env.episode_step
-    current_price = env.order_data['open'][current_index]
-    all_current_day_prices = env.order_data['open'][: current_index + 1]
-    max_day_price = max(all_current_day_prices)
-    min_day_price = min(all_current_day_prices)
-    previous_price = env.order_data['open'][current_index - 1]
-    episode_first_price = env.order_data['open'][env.start_index]
-    day_first_price = env.order_data['open'][0]
-    current_market_vwap = env.order_data['vwap'][current_index - 1]
-
-    # Time features
-    market_seconds = env.order_data['market_second'][current_index]
-
-    # Volume features
-    prev_volume = env.order_data['volume'][current_index - 1]
-    volume_sma = env.order_data['volume_sma'][current_index - 1]
-
-    return torch.tensor(
-        [
-            get_vleft_norm(env.remaining_qty, env.order),
-            get_tleft_norm(env.episode_step, env.order),
-            get_return(previous_price, current_price),
-            get_return(day_first_price, current_price),
-            get_return(episode_first_price, current_price),
-            get_return(max_day_price, current_price),
-            get_return(min_day_price, current_price),
-            get_elapsed_time_percentage(market_seconds),
-            get_vwap_norm(env.portfolio, current_market_vwap),
-            get_volume_norm(prev_volume, volume_sma),
-            env.order_data['sma_return_short'][current_index],
-            env.order_data['sma_return_long'][current_index],
-            env.order_data['ema_return_short'][current_index],
-            env.order_data['ema_return_long'][current_index],
-            env.order_data['macd'][current_index],
-            env.order_data['signal'][current_index],
-            env.order_data['volatility'][current_index],
-            env.order_data['rsi'][current_index],
-            env.order_data['bollinger_percentage'][current_index],
-            env.order_data['stoch_k'][current_index],
-        ]
-    )
 
 
 # Agent features
