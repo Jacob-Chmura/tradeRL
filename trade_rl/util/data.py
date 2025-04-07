@@ -4,6 +4,8 @@ from typing import Tuple
 
 import pandas as pd
 
+from trade_rl.util.feature_engineering import preprocess_data
+
 
 class Data:
     def __init__(self, data_path: str) -> None:
@@ -11,6 +13,7 @@ class Data:
         self.data = pd.read_parquet(data_path)
         logging.debug(f'Read {self.data.memory_usage(deep=True).sum() / 1e9} GB')
         self.unique_days = self.data['date'].unique()
+        self.data = preprocess_data(self.data)
 
     def get_order_data(
         self, start_time: int, max_steps: int
