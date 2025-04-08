@@ -5,9 +5,6 @@ from trade_rl.env import TradingEnvironment
 
 
 class BuyStartAgent(TradingAgent):
-    def __init__(self, env: TradingEnvironment) -> None:
-        super().__init__(env)
-
     def get_action(self, obs: Any) -> int:
         current_step = self.env.episode_step
         orderQuantity = self.env.order.qty
@@ -24,9 +21,6 @@ class BuyStartAgent(TradingAgent):
 
 
 class BuyLastAgent(TradingAgent):
-    def __init__(self, env: TradingEnvironment) -> None:
-        super().__init__(env)
-
     def get_action(self, obs: Any) -> int:
         current_step = self.env.episode_step
         orderQuantity = self.env.order.qty
@@ -44,9 +38,6 @@ class BuyLastAgent(TradingAgent):
 
 
 class LinearAgent(TradingAgent):
-    def __init__(self, env: TradingEnvironment) -> None:
-        super().__init__(env)
-
     def get_action(self, obs: Any) -> int:
         # Skip if the order is completed
         if self.env.remaining_qty <= 0:
