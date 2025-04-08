@@ -13,7 +13,7 @@ EnvironmentArgs:
     start_time_spec: [300, 1800, 9000, 18000] # 9:35, 10:00, 12:00, 2:30
     end_time_spec: [60, 600, 3600] # 1 minute, 10 minutes, 1 hour duration
 AgentArgs:
-  agent: 'random' # random, buy_below_arrival, buy_last, buy_start, linear, dqn, reinforce
+  agent_type: 'random' # random, buy_below_arrival, buy_last, buy_start, linear, dqn, reinforce
   dqn_args:
     lr: 0.0002
     gamma: 0.99

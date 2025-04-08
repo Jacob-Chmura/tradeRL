@@ -59,10 +59,8 @@ class DQNAgent(TradingAgent):
 
         q = self.qnet(obs_).gather(1, action_.unsqueeze(1)).squeeze()
         with torch.no_grad():
-            target_q = (
-                reward_ + (1 - done_) * self.gamma * self.qnet(next_obs_).max(1)[0]
-            )
-        loss = F.mse_loss(q, target_q)
+            target = reward_ + (1 - done_) * self.gamma * self.qnet(next_obs_).max(1)[0]
+        loss = F.mse_loss(q, target)
         self.opt.zero_grad()
         loss.backward()
         self.opt.step()

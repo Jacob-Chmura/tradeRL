@@ -56,7 +56,7 @@ class ReinforceArgs:
 
 @dataclass(slots=True)
 class AgentArgs:
-    agent: str = field(metadata={'help': 'Agent type to use'})
+    agent_type: str = field(metadata={'help': 'Agent type to use'})
     dqn_args: DQNArgs = field(metadata={'help': 'DQN Agent args'})
     reinforce_args: ReinforceArgs = field(metadata={'help': 'Reinforce Agent args'})
 

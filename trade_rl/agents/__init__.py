@@ -24,7 +24,7 @@ def agent_from_env(env: gym.Env, agent_args: AgentArgs) -> TradingAgent:
         'random': RandomAgent,
         'reinforce': lambda env: ReinforceAgent(env, agent_args.reinforce_args),
     }
-    agent_type = agent_args.agent.lower().strip()
+    agent_type = agent_args.agent_type.lower().strip()
     if agent_type not in agent_type_to_class:
         raise ValueError(
             f'Unknown agent: {agent_type}, expected one of: {agent_type_to_class.keys()}'
