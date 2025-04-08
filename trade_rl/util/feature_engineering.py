@@ -11,8 +11,76 @@ MEDIUM_WINDOW = 10
 LONG_WINDOW = 30
 
 
+def fill_missing_data(df: pd.DataFrame) -> pd.DataFrame:
+    symbol = df['symbol'].iloc[0]
+    # Combine 'data' and 'time' columns into a single datetime column
+    df['datetime'] = pd.to_datetime(
+        df['date'].astype(str) + ' ' + df['time'].astype(str)
+    )
+    df.set_index('datetime', inplace=True)
+
+    # Only keep necessary columns
+    ohlcv_cols = ['open', 'high', 'low', 'close', 'volume']
+    df = df[ohlcv_cols]
+
+    # Get unique dates
+    all_dates = df.index.normalize().unique()
+
+    filled_dfs = []
+
+    for date in all_dates:
+        # Create a full date range of seconds for the trading day
+        start = pd.Timestamp(date) + pd.Timedelta(hours=9, minutes=30)
+        end = pd.Timestamp(date) + pd.Timedelta(hours=16)
+        full_range = pd.date_range(start=start, end=end, freq='s')
+
+        # Filter the DataFrame for the current trading day
+        df_day = df.loc[(df.index >= start) & (df.index <= end)]
+
+        # Reindex to full 1-second range
+        df_day_filled = df_day.reindex(full_range)
+
+        # Forward fill OHLC values and fill volume with 0
+        df_day_filled[['open', 'high', 'low', 'close']] = df_day_filled[
+            ['open', 'high', 'low', 'close']
+        ].ffill()
+        df_day_filled['volume'] = df_day_filled['volume'].fillna(0)
+        df_day_filled['market_seconds'] = (
+            (df_day_filled.index - start).total_seconds().astype(int)
+        )
+
+        filled_dfs.append(df_day_filled)
+
+    # Concatenate all the filled daily data
+    df_filled = pd.concat(filled_dfs)
+
+    df_filled = df_filled.reset_index().rename(columns={'index': 'datetime'})
+    df_filled['date'] = df_filled['datetime'].dt.date
+    df_filled['time'] = df_filled['datetime'].dt.time
+    df_filled['symbol'] = symbol
+    df_filled.drop(columns=['datetime'], inplace=True)
+    df_filled = df_filled[
+        [
+            'date',
+            'time',
+            'market_seconds',
+            'symbol',
+            'open',
+            'high',
+            'low',
+            'close',
+            'volume',
+        ]
+    ]
+    df_filled.dropna(inplace=True)
+    df_filled.reset_index(drop=True, inplace=True)
+
+    return df_filled
+
+
 def preprocess_data(data: pd.DataFrame) -> pd.DataFrame:
     df = data.copy()
+    df = fill_missing_data(df)
 
     df['log_return'] = np.log(df['open'] / df['open'].shift(1))
     df['log_return'] = df['log_return'].fillna(0)
