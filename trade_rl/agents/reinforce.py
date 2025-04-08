@@ -8,21 +8,15 @@ from torch.distributions import Categorical
 
 from trade_rl.agents.base import TradingAgent
 from trade_rl.env import TradingEnvironment
-
-# TODO: Move to config
-LR = 0.01
-GAMMA = 0.99
-EPS = 1e-12
-UPDATE_EVERY = 1000
+from trade_rl.util.args import ReinforceArgs
 
 # TODO: Linear Schedule
-TEMP = 1
-
 # TODO: Consider GAE or critic for stability
+EPS = 1e-12
 
 
 class ReinforceAgent(TradingAgent):
-    def __init__(self, env: TradingEnvironment) -> None:
+    def __init__(self, env: TradingEnvironment, args: ReinforceArgs) -> None:
         super().__init__(env)
 
         obs_dim = int(env.observation_space.shape[0])  # type: ignore
@@ -30,7 +24,10 @@ class ReinforceAgent(TradingAgent):
         self.actions = env.action_space
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.policy = Policy(obs_dim, action_dim).to(self.device)
-        self.opt = torch.optim.Adam(self.policy.parameters(), lr=LR)
+        self.opt = torch.optim.Adam(self.policy.parameters(), lr=args.lr)
+        self.temp = args.temp
+        self.batch_size = args.batch_size
+        self.gamma = args.gamma
 
         self.rewards: List[float] = []
         self.log_probs: List[torch.Tensor] = []
@@ -38,7 +35,7 @@ class ReinforceAgent(TradingAgent):
     def get_action(self, obs: Any) -> int:
         obs_ = torch.Tensor(obs).to(self.device)
         action_logits = self.policy(obs_)
-        probs = F.softmax(action_logits / TEMP, dim=-1)
+        probs = F.softmax(action_logits / self.temp, dim=-1)
         m = Categorical(probs)
         action = m.sample()
         self.log_probs.append(m.log_prob(action))
@@ -48,7 +45,7 @@ class ReinforceAgent(TradingAgent):
         self, obs: Any, action: int, reward: float, terminated: bool, next_obs: Any
     ) -> None:
         self.rewards.append(reward)
-        if len(self.rewards) % UPDATE_EVERY == 0:
+        if len(self.rewards) % self.batch_size == 0:
             loss = self._get_loss()
             self.opt.zero_grad()
             loss.backward()
@@ -62,7 +59,7 @@ class ReinforceAgent(TradingAgent):
         policy_loss = []
         returns_: Deque[float] = deque()
         for r in self.rewards[::-1]:
-            R = r + GAMMA * R
+            R = r + self.gamma * R
             returns_.appendleft(R)
 
         returns = torch.tensor(list(returns_))
