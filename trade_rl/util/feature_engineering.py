@@ -11,9 +11,8 @@ MEDIUM_WINDOW = 10
 LONG_WINDOW = 30
 
 
-def fill_missing_data(data: pd.DataFrame) -> pd.DataFrame:
-    df = data.copy()
-
+def fill_missing_data(df: pd.DataFrame) -> pd.DataFrame:
+    symbol = df['symbol'].iloc[0]
     # Combine 'data' and 'time' columns into a single datetime column
     df['datetime'] = pd.to_datetime(
         df['date'].astype(str) + ' ' + df['time'].astype(str)
@@ -58,7 +57,7 @@ def fill_missing_data(data: pd.DataFrame) -> pd.DataFrame:
     df_filled = df_filled.reset_index().rename(columns={'index': 'datetime'})
     df_filled['date'] = df_filled['datetime'].dt.date
     df_filled['time'] = df_filled['datetime'].dt.time
-    df_filled['symbol'] = data['symbol'].iloc[0]
+    df_filled['symbol'] = symbol
     df_filled.drop(columns=['datetime'], inplace=True)
     df_filled = df_filled[
         [
