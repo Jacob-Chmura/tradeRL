@@ -27,7 +27,7 @@ class TradingEnvironment(gym.Env):
         self.observation_space = gym.spaces.Box(low=0, high=1, shape=(3,))  # TODO
         logging.info(f'Created Environment')
         self.tracker = PerfTracker(args)
-        self.reward_manager = RewardManager(reward_type='mock')
+        self.reward_manager = RewardManager(self, reward_type='arrival_sparse')
 
         # TODO: Careful about using max steps for train/test
         self.max_global_step = args.env.max_train_steps
@@ -63,7 +63,7 @@ class TradingEnvironment(gym.Env):
         self.remaining_qty -= action
         terminated = self.episode_step >= self.max_steps or self.remaining_qty == 0
         truncated = False
-        reward = self.reward_manager(self, terminated)
+        reward = self.reward_manager(terminated)
         obs, info = self._get_obs(), self._get_info()
         self.global_step += 1
         self.episode_step += 1
