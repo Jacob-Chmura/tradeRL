@@ -38,9 +38,38 @@ class EnvironmentArgs:
 
 
 @dataclass(slots=True)
+class DQNArgs:
+    lr: float = field(metadata={'help': 'Learning rate'})
+    gamma: float = field(metadata={'help': 'Discount factor'})
+    batch_size: int = field(metadata={'help': 'Batch size from replay buffer'})
+    buffer_size: int = field(metadata={'help': 'Max experience replay buffer size'})
+    eps: float = field(metadata={'help': 'Epsilon random exploration probability'})
+
+
+@dataclass(slots=True)
+class ReinforceArgs:
+    lr: float = field(metadata={'help': 'Learning rate'})
+    gamma: float = field(metadata={'help': 'Discount factor'})
+    batch_size: int = field(metadata={'help': 'Batch size from replay buffer'})
+    temp: float = field(metadata={'help': 'Softmax temperature for exploration'})
+
+
+@dataclass(slots=True)
+class AgentArgs:
+    agent: str = field(metadata={'help': 'Agent type to use'})
+    dqn_args: DQNArgs = field(metadata={'help': 'DQN Agent args'})
+    reinforce_args: ReinforceArgs = field(metadata={'help': 'Reinforce Agent args'})
+
+    def __post_init__(self) -> None:
+        self.dqn_args = DQNArgs(**self.dqn_args)  # type: ignore
+        self.reinforce_args = ReinforceArgs(**self.reinforce_args)  # type: ignore
+
+
+@dataclass(slots=True)
 class Args:
     meta: MetaArgs
     env: EnvironmentArgs
+    agent: AgentArgs
 
 
 def parse_args(config_yaml: str | pathlib.Path) -> Args:
@@ -48,4 +77,5 @@ def parse_args(config_yaml: str | pathlib.Path) -> Args:
     return Args(
         meta=MetaArgs(**config['MetaArgs']),
         env=EnvironmentArgs(**config['EnvironmentArgs']),
+        agent=AgentArgs(**config['AgentArgs']),
     )

@@ -10,20 +10,21 @@ from trade_rl.agents.heuristic import (
     BuyBelowArrivalAgent,
     LinearAgent,
 )
+from trade_rl.util.args import AgentArgs
 
 
-def agent_from_env(env: gym.Env, agent_type: str) -> TradingAgent:
+def agent_from_env(env: gym.Env, agent_args: AgentArgs) -> TradingAgent:
     agent_type_to_class = {
         'buy_below_arrival': BuyBelowArrivalAgent,
         'buy_last': BuyLastAgent,
         'buy_start': BuyStartAgent,
-        'dqn': DQNAgent,
+        'dqn': lambda env: DQNAgent(env, agent_args.dqn_args),
         'linear': LinearAgent,
         'ppo': PPOAgent,
         'random': RandomAgent,
-        'reinforce': ReinforceAgent,
+        'reinforce': lambda env: ReinforceAgent(env, agent_args.reinforce_args),
     }
-    agent_type = agent_type.lower().strip()
+    agent_type = agent_args.agent.lower().strip()
     if agent_type not in agent_type_to_class:
         raise ValueError(
             f'Unknown agent: {agent_type}, expected one of: {agent_type_to_class.keys()}'

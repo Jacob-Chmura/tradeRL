@@ -8,21 +8,13 @@ import torch.nn.functional as F
 
 from trade_rl.agents.base import TradingAgent
 from trade_rl.env import TradingEnvironment
-
-# TODO: Move to config
-LR = 2.5e-4
-BUFFER_SIZE = 10_000
-GAMMA = 0.99
-BATCH_SIZE = 128
-
-# TODO: Linear schedule
-EPS = 0.5
+from trade_rl.util.args import DQNArgs
 
 # TODO: Consider adding target net for stability
 
 
 class DQNAgent(TradingAgent):
-    def __init__(self, env: TradingEnvironment) -> None:
+    def __init__(self, env: TradingEnvironment, args: DQNArgs) -> None:
         super().__init__(env)
 
         obs_dim = int(env.observation_space.shape[0])  # type: ignore
@@ -30,11 +22,14 @@ class DQNAgent(TradingAgent):
         self.actions = env.action_space
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.qnet = DQN(obs_dim=obs_dim, action_dim=action_dim).to(self.device)
-        self.opt = torch.optim.Adam(self.qnet.parameters(), lr=LR)
-        self.memory = ReplayBuffer(BUFFER_SIZE)
+        self.opt = torch.optim.Adam(self.qnet.parameters(), lr=args.lr)
+        self.memory = ReplayBuffer(args.buffer_size)
+        self.eps = args.eps
+        self.batch_size = args.batch_size
+        self.gamma = args.gamma
 
     def get_action(self, obs: Any) -> int:
-        if random.random() < EPS:
+        if random.random() < self.eps:
             return self.actions.sample()
         obs_ = torch.Tensor(obs).to(self.device)
         with torch.no_grad():
@@ -51,10 +46,10 @@ class DQNAgent(TradingAgent):
         terminated_ = _tensorify([terminated], torch.float32)
         self.memory.push(obs_, action_, next_obs_, reward_, terminated_)
 
-        if len(self.memory) < BATCH_SIZE:
+        if len(self.memory) < self.batch_size:
             return
 
-        transitions = self.memory.sample(BATCH_SIZE)
+        transitions = self.memory.sample(self.batch_size)
         batch = Transition(*zip(*transitions))
         obs_ = torch.cat(batch.obs)
         next_obs_ = torch.cat(batch.next_obs)
@@ -64,7 +59,9 @@ class DQNAgent(TradingAgent):
 
         q = self.qnet(obs_).gather(1, action_.unsqueeze(1)).squeeze()
         with torch.no_grad():
-            target_q = reward_ + (1 - done_) * GAMMA * self.qnet(next_obs_).max(1)[0]
+            target_q = (
+                reward_ + (1 - done_) * self.gamma * self.qnet(next_obs_).max(1)[0]
+            )
         loss = F.mse_loss(q, target_q)
         self.opt.zero_grad()
         loss.backward()
