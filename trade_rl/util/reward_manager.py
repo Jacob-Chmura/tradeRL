@@ -49,7 +49,12 @@ class RewardManager:
     def _get_terminal_cost(self) -> float:
         if self.env.remaining_qty == 0:
             return 0
-        px = self.env.order_data['high'].iloc[
-            self.env.start_index + self.env.episode_step
-        ]
-        return TERMINATION_PX_COST_MULTIPLIER * px
+        px = (
+            self.env.order_data['high'].iloc[
+                self.env.start_index + self.env.episode_step
+            ]
+            * TERMINATION_PX_COST_MULTIPLIER
+        )
+
+        # Just use arrival here for simplicity
+        return px - self.env.order_data['open'].iloc[self.env.start_index]
