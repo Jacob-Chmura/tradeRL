@@ -27,14 +27,35 @@ class OrderGenArgs:
 
 
 @dataclass(slots=True)
+class FeatureArgs:
+    train_data_path: str = field(metadata={'help': 'Path to train data'})
+    test_data_path: str = field(metadata={'help': 'Path to test data'})
+    short_window: int = field(metadata={'help': 'Short-term rolling window size'})
+    medium_window: int = field(metadata={'help': 'Mid-term rolling window size'})
+    long_window: int = field(metadata={'help': 'Long-term rolling window size'})
+
+
+@dataclass(slots=True)
+class RewardArgs:
+    reward_type: str = field(metadata={'help': 'Type of reward to use'})
+    termination_px_cost_multiplier: float = field(
+        metadata={'help': 'Extra cost multiplier for unfinished qty at end of order'}
+    )
+
+
+@dataclass(slots=True)
 class EnvironmentArgs:
     env_name: str = field(metadata={'help': 'Gymanasium registered environment name'})
     max_train_steps: int = field(metadata={'help': 'Total train steps to run for'})
     max_test_steps: int = field(metadata={'help': 'Total test steps to run for'})
     order_gen_args: OrderGenArgs = field(metadata={'help': 'Order generator params'})
+    feature_args: FeatureArgs = field(metadata={'help': 'Feature arguments'})
+    reward_args: RewardArgs = field(metadata={'help': 'Reward arguments'})
 
     def __post_init__(self) -> None:
         self.order_gen_args = OrderGenArgs(**self.order_gen_args)  # type: ignore
+        self.feature_args = FeatureArgs(**self.feature_args)  # type: ignore
+        self.reward_args = RewardArgs(**self.reward_args)  # type: ignore
 
 
 @dataclass(slots=True)

@@ -12,6 +12,15 @@ EnvironmentArgs:
     qty_spec: [10, 50]
     start_time_spec: [300, 1800, 9000, 18000] # 9:35, 10:00, 12:00, 2:30
     end_time_spec: [60, 600, 3600] # 1 minute, 10 minutes, 1 hour duration
+  feature_args:
+    train_data_path: 'data/TSLA/OCHLV/train.parquet' # TODO: Multi-symbol
+    test_data_path: 'data/TSLA/OCHLV/test.parquet' # TODO: Multi-symbol
+    short_window: 5
+    medium_window: 10
+    long_window: 30
+  reward_args:
+    reward_type: 'arrival_sparse' # arrival_sparse, arrival_dense, vwap_sparse, vwap_dense, oracle
+    termination_px_cost_multiplier: 1.5
 AgentArgs:
   agent_type: 'random' # random, buy_below_arrival, buy_last, buy_start, linear, dqn, reinforce
   dqn_args:

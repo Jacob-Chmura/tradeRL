@@ -1,6 +1,6 @@
 import numpy as np
 
-TERMINATION_PX_COST_MULTIPLIER = 1.5  # TODO: Move to config
+from trade_rl.util.args import RewardArgs
 
 
 class RewardManager:
@@ -12,12 +12,14 @@ class RewardManager:
         'oracle',
     ]
 
-    def __init__(self, env: 'TradingEnvironment', reward_type: str) -> None:  # type: ignore
+    def __init__(self, env: 'TradingEnvironment', reward_args: RewardArgs) -> None:  # type: ignore
+        reward_type = reward_args.reward_type.lower().strip()
         if reward_type not in RewardManager._REWARD_TYPES:
             raise ValueError(f'Unknown reward type: {reward_type}')
 
         self.env = env
-        self.is_sparse = 'sparse' in reward_type
+        self.is_sparse = 'sparse' in reward_args.reward_type
+        self.terminal_cost_multiplier = reward_args.termination_px_cost_multiplier
 
         if 'arrival' in reward_type:
             self.benchmark = lambda: self.env.order_data['open'].iloc[
@@ -49,12 +51,10 @@ class RewardManager:
     def _get_terminal_cost(self) -> float:
         if self.env.remaining_qty == 0:
             return 0
-        px = (
-            self.env.order_data['high'].iloc[
-                self.env.start_index + self.env.episode_step
-            ]
-            * TERMINATION_PX_COST_MULTIPLIER
-        )
+        px = self.env.order_data['high'].iloc[
+            self.env.start_index + self.env.episode_step
+        ]
+        px *= self.terminal_cost_multiplier  # Additional cost for unfinished qty
 
         # Just use arrival here for simplicity
         return px - self.env.order_data['open'].iloc[self.env.start_index]
