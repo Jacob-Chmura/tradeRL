@@ -1,8 +1,9 @@
 ---
 MetaArgs:
   global_seed: 1337
+  num_runs: 5
   log_file_path: trade_rl.log
-  experiment_name: test_experiment
+  experiment_name: buy_below_arrival
 EnvironmentArgs:
   env_name: 'trade_rl/TradingEnvironment-v0'
   max_train_steps: 100000

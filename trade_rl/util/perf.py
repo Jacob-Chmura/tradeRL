@@ -14,9 +14,9 @@ class PerfTracker:
         log_dir.mkdir(parents=True, exist_ok=True)
         with open(log_dir / 'config.json', 'w') as f:
             json.dump(asdict(args), f)
-
+        fields += ['time']
         self.fp = open(log_dir / 'results.csv', 'a+', encoding='utf8')
-        self.writer = csv.DictWriter(self.fp, fieldnames=fields + ['time'])
+        self.writer = csv.DictWriter(self.fp, fieldnames=fields, lineterminator='\n')
         self.writer.writeheader()
 
     def __del__(self) -> None:

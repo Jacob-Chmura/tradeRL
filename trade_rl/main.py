@@ -22,9 +22,11 @@ def main() -> None:
     args_ = parser.parse_args()
     config_file_path = get_root_dir() / args_.config_file
     args = parse_args(config_file_path)
-    setup_basic_logging(args.meta.log_file_path)
-    seed_everything(args.meta.global_seed)
-    run(args)
+    for run_number in range(args.meta.num_runs):  # TODO: Concurrency
+        args.meta.global_seed += run_number
+        setup_basic_logging(args.meta.log_file_path)
+        seed_everything(args.meta.global_seed)
+        run(args)
 
 
 if __name__ == '__main__':

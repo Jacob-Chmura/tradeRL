@@ -2,7 +2,8 @@
 MetaArgs:
   global_seed: 1337
   log_file_path: trade_rl.log
-  experiment_name: test_experiment
+  num_runs: 5
+  experiment_name: random_agent
 EnvironmentArgs:
   env_name: 'trade_rl/TradingEnvironment-v0'
   max_train_steps: 100000
