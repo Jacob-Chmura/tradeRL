@@ -80,9 +80,7 @@ class TradingEnvironment(gym.Env):
         self.reward_manager = RewardManager(self, args.env.reward_args)
         self.order_generator = OrderGenerator(args.env.order_gen_args)
         self.tracker = PerfTracker(list(asdict(self.info)), args)
-
         self.day_data = self._new_order()
-        logging.info(f'Created Environment')
 
     def reset(
         self, seed: Optional[int] = None, options: Optional[dict] = None

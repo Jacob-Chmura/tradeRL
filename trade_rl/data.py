@@ -52,6 +52,7 @@ def preprocess_data(
         df['sma_return_long'] = df['log_return'].rolling(window=long_window).mean()
         df['ema_return_short'] = df['log_return'].ewm(span=short_window).mean()
         df['ema_return_long'] = df['log_return'].ewm(span=long_window).mean()
+        df['volume_sma'] = df['volume'].rolling(window=long_window).mean()
 
         # MACD (Moving Average Convergence Divergence)
         df['macd'] = df['ema_return_short'] - df['ema_return_long']
@@ -69,8 +70,7 @@ def preprocess_data(
         # Bollinger bands percentage
         sma_20 = df['open'].rolling(long_window).mean()
         std_20 = df['open'].rolling(long_window).std()
-        upper = sma_20 + 2 * std_20
-        lower = sma_20 - 2 * std_20
+        lower, upper = sma_20 - 2 * std_20, sma_20 + 2 * std_20
         df['bollinger_percentage'] = (df['open'] - lower) / (upper - lower + 1e-9)
 
         # %K of stochastic oscillator
@@ -80,9 +80,6 @@ def preprocess_data(
 
         # VWAP (Volume Weighted Average Price)
         df['vwap'] = (df['volume'] * df['open']).cumsum() / df['volume'].cumsum()
-
-        # Volume moving average
-        df['volume_sma'] = df['volume'].rolling(window=long_window).mean()
         return df
 
     day_to_data = {}  # TODO: Map symbol as well
