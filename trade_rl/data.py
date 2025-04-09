@@ -1,5 +1,6 @@
 import logging
 import random
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
@@ -20,9 +21,9 @@ class Data:
         self.unique_days = data['date'].unique()
         self.data = preprocess_data(data, feature_args)
 
-    def get_random_day_of_data(self) -> pd.DataFrame:
+    def get_random_day_of_data(self) -> Tuple[str, pd.DataFrame]:
         date = random.choice(self.unique_days)
-        return self.data[self.data.date == date].reset_index(drop=True)
+        return date, self.data[self.data.date == date].reset_index(drop=True)
 
 
 def preprocess_data(data: pd.DataFrame, feature_args: FeatureArgs) -> pd.DataFrame:

@@ -34,7 +34,6 @@ class Info:
     portfolio: Optional[List[Tuple[float, int]]] = None
     total_reward: float = 0
     agent_vwap: float = 0
-    market_vwap: float = 0
     arrival_slippage: float = 0
     vwap_slippage: float = 0
     oracle_slippage: float = 0
@@ -47,12 +46,10 @@ class Info:
         self.order_duration = order.duration
         self.order_qty = order.qty
         self.order_symbol = order.sym
-        self.order_date = ''  # TODO
         self.qty_left = order.qty
         self.portfolio = []
         self.total_reward = 0
         self.agent_vwap = 0
-        self.market_vwap = 0
         self.arrival_slippage = 0
         self.vwap_slippage = 0
         self.oracle_slippage = 0
@@ -61,6 +58,7 @@ class Info:
         if action:
             self.qty_left -= 1
             self.portfolio.append((current_market['close'], self.step))  # type: ignore
+            self.agent_vwap = np.mean([x[0] for x in self.portfolio])  # type: ignore
         self.global_step += 1
         self.step += 1
 
@@ -101,7 +99,7 @@ class TradingEnvironment(gym.Env):
         slippages, reward = self.reward_manager(done)
         self.info.update_perf(slippages, reward)
         obs, info = self._get_obs(), asdict(self.info)
-        logging.info(info)
+        logging.debug(info)
         return obs, reward, done, truncated, info
 
     @property
@@ -126,15 +124,13 @@ class TradingEnvironment(gym.Env):
         order_mask = self.day_data.market_second.between(
             self.info.order_start_time, order_end_time
         )
-        order_data = self.day_data[order_mask].reset_index(drop=True)
-        return order_data
+        return self.day_data[order_mask].reset_index(drop=True)
 
     def _new_order(self) -> pd.DataFrame:
         order = self.order_generator()
         logging.debug(f'New order: {order}')
         self.info.new_episode(order)
-
-        day_data = self.data.get_random_day_of_data()
+        self.info.order_date, day_data = self.data.get_random_day_of_data()
         return day_data
 
     def _get_obs(self) -> np.ndarray:
@@ -143,10 +139,7 @@ class TradingEnvironment(gym.Env):
         order_arrival_market = self.order_arrival_market
         market_open = self.market_open
 
-        all_pxs = self.day_data['open'][
-            : self.info.order_start_time + self.info.step + 1
-        ]
-        agent_vwap = np.mean([x[0] for x in self.info.portfolio])  # type: ignore
+        day_pxs = self.day_data['open'][: self.info.order_start_time + self.info.step]
         get_return = lambda prev, curr: (curr - prev) / prev
 
         obs = np.array(
@@ -156,9 +149,9 @@ class TradingEnvironment(gym.Env):
                 get_return(previous_market['open'], current_market['open']),
                 get_return(market_open['open'], current_market['open']),
                 get_return(order_arrival_market['open'], current_market['open']),
-                get_return(min(all_pxs), current_market['open']),
-                get_return(max(all_pxs), current_market['open']),
-                agent_vwap / previous_market['vwap']
+                get_return(min(day_pxs), current_market['open']),
+                get_return(max(day_pxs), current_market['open']),
+                self.info.agent_vwap / previous_market['vwap']
                 if previous_market['vwap'] != 0
                 else 0,
                 previous_market['volume'] / previous_market['volume_sma']

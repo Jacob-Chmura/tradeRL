@@ -1,7 +1,5 @@
 from typing import Dict, Tuple
 
-import numpy as np
-
 from trade_rl.util.args import RewardArgs
 
 
@@ -35,10 +33,9 @@ class RewardManager:
     def __call__(self, order_done: bool) -> Tuple[Dict[str, float], float]:
         slippages = {'arrival': 0.0, 'vwap': 0.0, 'oracle': 0.0}
         if len(self.env.info.portfolio):
-            agent_vwap = np.mean([x[0] for x in self.env.info.portfolio])
-            slippages['arrival'] = agent_vwap - self.arrival_benchmark()
-            slippages['vwap'] = agent_vwap - self.vwap_benchmark()
-            slippages['oracle'] = agent_vwap - self.oracle_benchmark()
+            slippages['arrival'] = self.env.info.agent_vwap - self.arrival_benchmark()
+            slippages['vwap'] = self.env.info.agent_vwap - self.vwap_benchmark()
+            slippages['oracle'] = self.env.info.agent_vwap - self.oracle_benchmark()
 
         cost = 0 if self.is_sparse else slippages[self.slippage_type]
         if order_done and self.env.info.qty_left > 0:
