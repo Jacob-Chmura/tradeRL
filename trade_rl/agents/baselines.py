@@ -4,6 +4,11 @@ from trade_rl.agents.base import TradingAgent
 from trade_rl.env import TradingEnvironment
 
 
+class RandomAgent(TradingAgent):
+    def get_action(self, obs: Any) -> int:
+        return self.env.action_space.sample()
+
+
 class BuyStartAgent(TradingAgent):
     def get_action(self, obs: Any) -> int:
         current_step = self.env.episode_step
