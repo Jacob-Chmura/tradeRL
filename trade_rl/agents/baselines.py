@@ -15,17 +15,18 @@ class BuyStartAgent(TradingAgent):
 
 class BuyLastAgent(TradingAgent):
     def get_action(self, obs: Any) -> int:
-        return self.env.info.step >= self.env.order.duration - self.env.order.qty
+        start_to_buy_time = self.env.info.order_duration - self.env.info.order_qty
+        return self.env.info.step >= start_to_buy_time
 
 
 class BuyLinearScheduleAgent(TradingAgent):
     def get_action(self, obs: Any) -> int:
-        interval = self.env.order.duration // self.env.order.qty
+        interval = self.env.info.order_duration // self.env.info.order_qty
         return self.env.info.step % interval == 0
 
 
 class BuyBelowArrivalAgent(TradingAgent):
     def get_action(self, obs: Any) -> int:
         if self.env.info.step == 0:
-            self.arrival_px = self.env.current_market_data['open']
-        return self.env.current_market_data['open'] < self.arrival_px
+            self.arrival_px = self.env.current_market['open']
+        return self.env.current_market['open'] < self.arrival_px

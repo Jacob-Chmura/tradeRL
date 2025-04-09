@@ -28,11 +28,11 @@ class Info:
     order_qty: int = -1
     order_symbol: str = ''
     order_date: str = ''
-    remaining_qty: int = -1
+    qty_left: int = -1
 
     # Performance Info
     portfolio: Optional[List[Tuple[float, int]]] = None
-    returns: float = 0
+    total_reward: float = 0
     agent_vwap: float = 0
     market_vwap: float = 0
     arrival_slippage: float = 0
@@ -48,23 +48,27 @@ class Info:
         self.order_qty = order.qty
         self.order_symbol = order.sym
         self.order_date = ''  # TODO
-        self.remaining_qty = order.qty
+        self.qty_left = order.qty
         self.portfolio = []
-        self.returns = 0
+        self.total_reward = 0
         self.agent_vwap = 0
         self.market_vwap = 0
         self.arrival_slippage = 0
         self.vwap_slippage = 0
         self.oracle_slippage = 0
 
-    def new_step(self, action: int, order_data: pd.DataFrame) -> None:
+    def new_step(self, action: int, current_market: Dict[str, Any]) -> None:
         if action:
-            self.remaining_qty -= 1
-            self.portfolio.append((order_data['close'][self.step], self.step))  # type: ignore
+            self.qty_left -= 1
+            self.portfolio.append((current_market['close'], self.step))  # type: ignore
         self.global_step += 1
         self.step += 1
 
-        # TODO: Update performance
+    def update_perf(self, slippages: Dict[str, float], reward: float) -> None:
+        self.arrival_slippage = slippages['arrival']
+        self.vwap_slippage = slippages['vwap']
+        self.oracle_slippage = slippages['oracle']
+        self.total_reward += reward
 
 
 class TradingEnvironment(gym.Env):
@@ -79,7 +83,7 @@ class TradingEnvironment(gym.Env):
         self.order_generator = OrderGenerator(args.env.order_gen_args)
         self.tracker = PerfTracker(list(asdict(self.info)), args)
 
-        self.order, self.day_data, self.order_data = self._new_order()
+        self.day_data = self._new_order()
         logging.info(f'Created Environment')
 
     def reset(
@@ -87,97 +91,94 @@ class TradingEnvironment(gym.Env):
     ) -> Tuple[Any, ...]:
         super().reset(seed=seed)
         self.tracker(asdict(self.info))
-        self.order, self.day_data, self.order_data = self._new_order()
+        self.day_data = self._new_order()
         return self._get_obs(), asdict(self.info)
 
     def step(self, action: int) -> Tuple[Any, ...]:
-        self.info.new_step(action, self.order_data)
-        obs, info = self._get_obs(), asdict(self.info)
-        print(info)
-        print(np.round(obs, 2))
-        input()
-        terminated = (
-            self.info.step >= self.info.order_duration or self.info.remaining_qty == 0
-        )
+        self.info.new_step(action, self.current_market)
+        done = self.info.step >= self.info.order_duration or self.info.qty_left == 0
         truncated = False
-        reward = self.reward_manager(terminated)
-        return obs, reward, terminated, truncated, info
+        slippages, reward = self.reward_manager(done)
+        self.info.update_perf(slippages, reward)
+        obs, info = self._get_obs(), asdict(self.info)
+        logging.info(info)
+        return obs, reward, done, truncated, info
 
     @property
-    def current_market_data(self) -> Dict[str, Any]:
-        return self.order_data.iloc[self.info.step].to_dict()
+    def current_market(self) -> Dict[str, Any]:
+        return self._get_market_data(self.info.order_start_time + self.info.step)
 
     @property
-    def previous_market_data(self) -> Dict[str, Any]:
-        return self.order_data.iloc[self.info.step - 1].to_dict()
+    def previous_market(self) -> Dict[str, Any]:
+        return self._get_market_data(self.info.order_start_time + self.info.step - 1)
 
     @property
-    def order_arrival_market_data(self) -> Dict[str, Any]:
-        return self.order_data.iloc[0].to_dict()
+    def order_arrival_market(self) -> Dict[str, Any]:
+        return self.day_data.iloc[self.info.order_start_time].to_dict()
 
     @property
-    def market_open_market_data(self) -> Dict[str, Any]:
-        return self.day_data.iloc[0].to_dict()
+    def market_open(self) -> Dict[str, Any]:
+        return self._get_market_data(i=0)
 
-    def _new_order(self) -> Tuple[Order, pd.DataFrame, pd.DataFrame]:
+    @property
+    def order_duration_market(self) -> pd.DataFrame:
+        order_end_time = self.info.order_start_time + self.info.order_duration
+        order_mask = self.day_data.market_second.between(
+            self.info.order_start_time, order_end_time
+        )
+        order_data = self.day_data[order_mask].reset_index(drop=True)
+        return order_data
+
+    def _new_order(self) -> pd.DataFrame:
         order = self.order_generator()
         logging.debug(f'New order: {order}')
         self.info.new_episode(order)
 
         day_data = self.data.get_random_day_of_data()
-        order_end_time = order.start_time + order.duration
-        order_mask = day_data.market_second.between(order.start_time, order_end_time)
-        order_data = day_data[order_mask].reset_index(drop=True)
-        return order, day_data, order_data
+        return day_data
 
     def _get_obs(self) -> np.ndarray:
-        # Price Features
-        current_px = self.current_market_data['open']
-        arrival_px = self.order_arrival_market_data['open']
-        market_open_px = self.market_open_market_data['open']
-        previous_px = self.previous_market_data['open']
-        all_pxs = self.day_data['open'][: self.order.start_time + self.info.step + 1]
-        max_day_px, min_day_px = max(all_pxs), min(all_pxs)
+        current_market = self.current_market
+        previous_market = self.previous_market
+        order_arrival_market = self.order_arrival_market
+        market_open = self.market_open
 
+        all_pxs = self.day_data['open'][
+            : self.info.order_start_time + self.info.step + 1
+        ]
         agent_vwap = np.mean([x[0] for x in self.info.portfolio])  # type: ignore
-        market_vwap = self.previous_market_data['vwap']
-
-        # Time features
-        market_second = self.current_market_data['market_second']
-
-        # Volume features
-        prev_volume = self.previous_market_data['volume']
-        volume_sma = self.previous_market_data['volume_sma']
-
         get_return = lambda prev, curr: (curr - prev) / prev
 
-        return np.array(
+        obs = np.array(
             [
-                self.info.remaining_qty / self.order.qty,
-                self.info.step / self.order.duration,
-                get_return(previous_px, current_px),
-                get_return(market_open_px, current_px),
-                get_return(arrival_px, current_px),
-                get_return(max_day_px, current_px),
-                get_return(min_day_px, current_px),
-                market_second / 23400,
-                agent_vwap / market_vwap if market_vwap != 0 else 0,
-                prev_volume / volume_sma if volume_sma != 0 else 0,
-                self.order_data['sma_return_short'][self.info.step],
-                self.order_data['sma_return_long'][self.info.step],
-                self.order_data['ema_return_short'][self.info.step],
-                self.order_data['ema_return_long'][self.info.step],
-                self.order_data['macd'][self.info.step],
-                self.order_data['signal'][self.info.step],
-                self.order_data['volatility'][self.info.step],
-                self.order_data['rsi'][self.info.step],
-                self.order_data['bollinger_percentage'][self.info.step],
-                self.order_data['stoch_k'][self.info.step],
+                self.info.qty_left / self.info.order_qty,
+                self.info.step / self.info.order_duration,
+                get_return(previous_market['open'], current_market['open']),
+                get_return(market_open['open'], current_market['open']),
+                get_return(order_arrival_market['open'], current_market['open']),
+                get_return(min(all_pxs), current_market['open']),
+                get_return(max(all_pxs), current_market['open']),
+                agent_vwap / previous_market['vwap']
+                if previous_market['vwap'] != 0
+                else 0,
+                previous_market['volume'] / previous_market['volume_sma']
+                if previous_market['volume_sma'] != 0
+                else 0,
+                current_market['market_second'] / 23400,
+                current_market['sma_return_short'],
+                current_market['sma_return_long'],
+                current_market['ema_return_short'],
+                current_market['ema_return_long'],
+                current_market['macd'],
+                current_market['signal'],
+                current_market['volatility'],
+                current_market['rsi'],
+                current_market['bollinger_percentage'],
+                current_market['stoch_k'],
             ]
-        ).clip(-1, 1)
+        ).clip(-3, 3)
+        obs[np.isnan(obs)] = 0.0
+        return obs
 
-
-# TODO: Move somewhere
-def linear_schedule(start: float, end: float, duration: float, t: int) -> float:
-    slope = (end - start) / duration
-    return max(slope * t + start, end)
+    def _get_market_data(self, i: int) -> Dict[str, Any]:
+        return self.day_data.iloc[i].to_dict()

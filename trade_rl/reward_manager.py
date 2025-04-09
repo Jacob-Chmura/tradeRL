@@ -1,3 +1,5 @@
+from typing import Dict, Tuple
+
 import numpy as np
 
 from trade_rl.util.args import RewardArgs
@@ -19,36 +21,27 @@ class RewardManager:
 
         self.env = env
         self.is_sparse = 'sparse' in reward_args.reward_type
+        self.slippage_type = reward_type.split('_')[0]  # arrival_sparse -> arrival
         self.terminal_cost_multiplier = reward_args.termination_px_cost_multiplier
 
-        if 'arrival' in reward_type:
-            self.benchmark = lambda: self.env.order_data['open'][0]
-        elif 'vwap' in reward_type:
-            self.benchmark = lambda: self.env.order_data['vwap'][
-                self.env.episode_step - 1
-            ]
-        elif 'oracle' in reward_type:
-            self.benchmark = (
-                lambda: self.env.order_data['vwap']
-                .nsmallest(self.env.episode_step)
-                .mean()
-            )
+        self.arrival_benchmark = lambda: self.env.order_arrival_market['open']
+        self.vwap_benchmark = lambda: self.env.previous_market['vwap']
+        self.oracle_benchmark = (
+            lambda: self.env.order_duration_market['vwap']
+            .nsmallest(self.env.info.step)
+            .mean()
+        )
 
-    def __call__(self, terminated: bool) -> float:
-        cost = self.get_slippage()
-        if terminated:
-            cost += self._get_terminal_cost()
-        return -cost
+    def __call__(self, order_done: bool) -> Tuple[Dict[str, float], float]:
+        slippages = {'arrival': 0.0, 'vwap': 0.0, 'oracle': 0.0}
+        if len(self.env.info.portfolio):
+            agent_vwap = np.mean([x[0] for x in self.env.info.portfolio])
+            slippages['arrival'] = agent_vwap - self.arrival_benchmark()
+            slippages['vwap'] = agent_vwap - self.vwap_benchmark()
+            slippages['oracle'] = agent_vwap - self.oracle_benchmark()
 
-    def get_slippage(self) -> float:
-        if self.is_sparse or not len(self.env.portfolio):
-            return 0
-        agent_vwap = np.mean([x[0] for x in self.env.portfolio])
-        return agent_vwap - self.benchmark()
-
-    def _get_terminal_cost(self) -> float:
-        if self.env.info.remaining_qty == 0:
-            return 0
-        px = self.env.order_data['high'][self.env.episode_step]
-        px *= self.terminal_cost_multiplier  # Additional cost for unfinished qty
-        return px - self.env.order_data['open'][0]
+        cost = 0 if self.is_sparse else slippages[self.slippage_type]
+        if order_done and self.env.info.qty_left > 0:
+            finish_px = self.terminal_cost_multiplier * self.env.current_market['high']
+            cost += finish_px - self.env.order_arrival_market['open']
+        return slippages, -cost
