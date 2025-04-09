@@ -36,10 +36,10 @@ class BuyBelowArrivalAgent(TradingAgent):
     def get_action(self, obs: Any) -> int:
         # At first step, the agent will set the arrival price
         if self.env.episode_step == 0:
-            self.arrival_px = self.env.order_data['open'][self.env.start_index]
+            self.arrival_px = self.env.order_data['open'][0]
             return 0
 
-        px = self.env.order_data['open'][self.env.start_index + self.env.episode_step]
+        px = self.env.order_data['open'][self.env.episode_step]
         if px < self.arrival_px:
             self.logger.info(f'BUY: step {self.env.episode_step}')
             return 1

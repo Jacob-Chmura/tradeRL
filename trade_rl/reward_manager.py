@@ -22,12 +22,10 @@ class RewardManager:
         self.terminal_cost_multiplier = reward_args.termination_px_cost_multiplier
 
         if 'arrival' in reward_type:
-            self.benchmark = lambda: self.env.order_data['open'].iloc[
-                self.env.start_index
-            ]
+            self.benchmark = lambda: self.env.order_data['open'][0]
         elif 'vwap' in reward_type:
-            self.benchmark = lambda: self.env.order_data['vwap'].iloc[
-                self.env.start_index + self.env.episode_step - 1
+            self.benchmark = lambda: self.env.order_data['vwap'][
+                self.env.episode_step - 1
             ]
         elif 'oracle' in reward_type:
             self.benchmark = (
@@ -51,10 +49,6 @@ class RewardManager:
     def _get_terminal_cost(self) -> float:
         if self.env.remaining_qty == 0:
             return 0
-        px = self.env.order_data['high'].iloc[
-            self.env.start_index + self.env.episode_step
-        ]
+        px = self.env.order_data['high'][self.env.episode_step]
         px *= self.terminal_cost_multiplier  # Additional cost for unfinished qty
-
-        # Just use arrival here for simplicity
-        return px - self.env.order_data['open'].iloc[self.env.start_index]
+        return px - self.env.order_data['open'][0]

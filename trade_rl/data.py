@@ -1,6 +1,6 @@
 import logging
 import random
-from typing import List, Tuple
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -22,14 +22,9 @@ class Data:
         self.unique_days = data['date'].unique()
         self.data = preprocess_data(data, feature_args)
 
-    def get_order_data(
-        self, start_time: int, max_steps: int
-    ) -> Tuple[pd.DataFrame, int, int]:
+    def get_random_day_of_data(self) -> pd.DataFrame:
         date = random.choice(self.unique_days)
-        data = self.data[self.data.date == date].copy()
-        order_start_index = len(data[data.market_second < start_time])
-        max_steps = min(max_steps, len(data) - order_start_index - 1)
-        return data, order_start_index, max_steps
+        return self.data[self.data.date == date].reset_index(drop=True)
 
 
 def preprocess_data(data: pd.DataFrame, feature_args: FeatureArgs) -> pd.DataFrame:

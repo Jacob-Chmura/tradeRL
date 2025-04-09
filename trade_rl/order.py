@@ -24,7 +24,6 @@ class OrderGenerator:
     def __call__(self) -> Order:
         return Order(
             order_id=str(uuid.uuid4()),
-            # data doesn't always adhere to 1s time steps, less than 23400s in a trading day,
             start_time=random.choice(self.config.start_time_spec),
             duration=random.choice(self.config.duration_spec),
             sym=random.choice(self.config.sym_spec),  # type: ignore
