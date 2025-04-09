@@ -22,7 +22,7 @@ EnvironmentArgs:
     reward_type: 'arrival_sparse' # arrival_sparse, arrival_dense, vwap_sparse, vwap_dense, oracle
     termination_px_cost_multiplier: 1.5
 AgentArgs:
-  agent_type: 'random' # random, buy_below_arrival, buy_last, buy_start, buy_linear_schedule, dqn, reinforce
+  agent_type: 'reinforce' # random, buy_below_arrival, buy_last, buy_start, buy_linear_schedule, dqn, reinforce
   dqn_args:
     lr: 0.0002
     gamma: 0.99

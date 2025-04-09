@@ -22,8 +22,8 @@ class RewardManager:
         self.slippage_type = reward_type.split('_')[0]  # arrival_sparse -> arrival
         self.terminal_cost_multiplier = reward_args.termination_px_cost_multiplier
 
-        self.arrival_benchmark = lambda: self.env.order_arrival_market['open']
-        self.vwap_benchmark = lambda: self.env.previous_market['vwap']
+        self.arrival_benchmark = lambda: self.env.order_arrival['open']
+        self.vwap_benchmark = lambda: self.env.previous['vwap']
         self.oracle_benchmark = (
             lambda: self.env.order_duration_market['vwap']
             .nsmallest(self.env.info.step)
@@ -39,6 +39,6 @@ class RewardManager:
 
         cost = 0 if self.is_sparse else slippages[self.slippage_type]
         if order_done and self.env.info.qty_left > 0:
-            finish_px = self.terminal_cost_multiplier * self.env.current_market['high']
-            cost += finish_px - self.env.order_arrival_market['open']
+            finish_px = self.terminal_cost_multiplier * self.env.current['high']
+            cost += finish_px - self.env.order_arrival['open']
         return slippages, -cost

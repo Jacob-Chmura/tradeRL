@@ -53,10 +53,10 @@ class Info:
         self.vwap_slippage = 0
         self.oracle_slippage = 0
 
-    def new_step(self, action: int, current_market: Dict[str, Any]) -> None:
+    def new_step(self, action: int, current: Dict[str, Any]) -> None:
         if action:
             self.qty_left -= 1
-            self.portfolio.append((current_market['close'], self.step))  # type: ignore
+            self.portfolio.append((current['close'], self.step))  # type: ignore
             self.agent_vwap = np.mean([x[0] for x in self.portfolio])  # type: ignore
         self.global_step += 1
         self.step += 1
@@ -74,12 +74,14 @@ class Info:
 
 
 class TradingEnvironment(gym.Env):
+    OBS_DIM = 20
+
     def __init__(self, args: Args, data: Data) -> None:
         super().__init__()
         self.data = data
         self.info = Info()
         self.action_space = gym.spaces.Discrete(2)  # Skip or Take
-        self.observation_space = gym.spaces.Box(low=0, high=1, shape=(3,))  # TODO
+        self.observation_space = gym.spaces.Box(low=-3, high=3, shape=(self.OBS_DIM,))
 
         self.reward_manager = RewardManager(self, args.env.reward_args)
         self.order_generator = OrderGenerator(args.env.order_gen_args)
@@ -95,7 +97,7 @@ class TradingEnvironment(gym.Env):
         return self._get_obs(), self.info.to_dict()
 
     def step(self, action: int) -> Tuple[Any, ...]:
-        self.info.new_step(action, self.current_market)
+        self.info.new_step(action, self.current)
         done = self.info.step >= self.info.order_duration or self.info.qty_left == 0
         truncated = False
         slippages, reward = self.reward_manager(done)
@@ -105,15 +107,15 @@ class TradingEnvironment(gym.Env):
         return obs, reward, done, truncated, info
 
     @property
-    def current_market(self) -> Dict[str, Any]:
+    def current(self) -> Dict[str, Any]:
         return self._get_market_data(self.info.order_start_time + self.info.step)
 
     @property
-    def previous_market(self) -> Dict[str, Any]:
+    def previous(self) -> Dict[str, Any]:
         return self._get_market_data(self.info.order_start_time + self.info.step - 1)
 
     @property
-    def order_arrival_market(self) -> Dict[str, Any]:
+    def order_arrival(self) -> Dict[str, Any]:
         return self.day_data.iloc[self.info.order_start_time].to_dict()
 
     @property
@@ -122,11 +124,10 @@ class TradingEnvironment(gym.Env):
 
     @property
     def order_duration_market(self) -> pd.DataFrame:
-        order_end_time = self.info.order_start_time + self.info.order_duration
-        order_mask = self.day_data.market_second.between(
-            self.info.order_start_time, order_end_time
-        )
-        return self.day_data[order_mask].reset_index(drop=True)
+        order_start_time = self.info.order_start_time
+        order_end_time = order_start_time + self.info.order_duration
+        mask = self.day_data.market_second.between(order_start_time, order_end_time)
+        return self.day_data[mask].reset_index(drop=True)
 
     def _new_order(self) -> pd.DataFrame:
         order = self.order_generator()
@@ -136,42 +137,38 @@ class TradingEnvironment(gym.Env):
         return day_data
 
     def _get_obs(self) -> np.ndarray:
-        current_market = self.current_market
-        previous_market = self.previous_market
-        order_arrival_market = self.order_arrival_market
+        current = self.current
+        previous = self.previous
+        order_arrival = self.order_arrival
         market_open = self.market_open
 
         day_pxs = self.day_data['open'][: self.info.order_start_time + self.info.step]
-        get_return = lambda prev, curr: (curr - prev) / prev
+        safe_divide = lambda num, denom: num / denom if denom != 0 else 0
+        get_return = lambda prev, curr: safe_divide(curr - prev, prev)
 
-        obs = np.array(
-            [
-                self.info.qty_left / self.info.order_qty,
-                self.info.step / self.info.order_duration,
-                get_return(previous_market['open'], current_market['open']),
-                get_return(market_open['open'], current_market['open']),
-                get_return(order_arrival_market['open'], current_market['open']),
-                get_return(min(day_pxs), current_market['open']),
-                get_return(max(day_pxs), current_market['open']),
-                self.info.agent_vwap / previous_market['vwap']
-                if previous_market['vwap'] != 0
-                else 0,
-                previous_market['volume'] / previous_market['volume_sma']
-                if previous_market['volume_sma'] != 0
-                else 0,
-                current_market['market_second'] / 23400,
-                current_market['sma_return_short'],
-                current_market['sma_return_long'],
-                current_market['ema_return_short'],
-                current_market['ema_return_long'],
-                current_market['macd'],
-                current_market['signal'],
-                current_market['volatility'],
-                current_market['rsi'],
-                current_market['bollinger_percentage'],
-                current_market['stoch_k'],
-            ]
-        ).clip(-3, 3)
+        obs = np.zeros(self.OBS_DIM)
+        obs[0] = self.info.qty_left / self.info.order_qty
+        obs[1] = self.info.step / self.info.order_duration
+        obs[2] = get_return(previous['open'], current['open'])
+        obs[3] = get_return(market_open['open'], current['open'])
+        obs[4] = get_return(order_arrival['open'], current['open'])
+        obs[5] = get_return(min(day_pxs), current['open'])
+        obs[6] = get_return(max(day_pxs), current['open'])
+        obs[7] = safe_divide(self.info.agent_vwap, previous['vwap'])
+        obs[8] = safe_divide(previous['volume'], previous['volume_sma'])
+        obs[9] = current['market_second'] / 23400
+        obs[10] = current['sma_return_short']
+        obs[11] = current['sma_return_long']
+        obs[12] = current['ema_return_short']
+        obs[13] = current['ema_return_long']
+        obs[14] = current['macd']
+        obs[15] = current['signal']
+        obs[16] = current['volatility']
+        obs[17] = current['rsi']
+        obs[18] = current['bollinger_percentage']
+        obs[19] = current['stoch_k']
+
+        obs = obs.clip(-3, 3)
         obs[np.isnan(obs)] = 0.0
         return obs
 

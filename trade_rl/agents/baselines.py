@@ -27,6 +27,4 @@ class BuyLinearScheduleAgent(TradingAgent):
 
 class BuyBelowArrivalAgent(TradingAgent):
     def get_action(self, obs: Any) -> int:
-        if self.env.info.step == 0:
-            self.arrival_px = self.env.current_market['open']
-        return self.env.current_market['open'] < self.arrival_px
+        return self.env.current['open'] < self.env.market_open['open']
