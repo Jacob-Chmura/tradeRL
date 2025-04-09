@@ -12,7 +12,6 @@ from trade_rl.util.args import ReinforceArgs
 
 # TODO: Linear Schedule
 # TODO: Consider GAE or critic for stability
-EPS = 1e-12
 
 
 class ReinforceAgent(TradingAgent):
@@ -63,7 +62,7 @@ class ReinforceAgent(TradingAgent):
             returns_.appendleft(R)
 
         returns = torch.tensor(list(returns_))
-        returns = (returns - returns.mean()) / (returns.std() + EPS)
+        returns = (returns - returns.mean()) / (returns.std() + 1e-12)
 
         for log_prob, R in zip(self.log_probs, returns):
             policy_loss.append(-log_prob * R)

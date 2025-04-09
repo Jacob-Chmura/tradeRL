@@ -1,7 +1,6 @@
 from typing import Any
 
 from trade_rl.agents.base import TradingAgent
-from trade_rl.env import TradingEnvironment
 
 
 class RandomAgent(TradingAgent):
@@ -34,18 +33,14 @@ class BuyLinearScheduleAgent(TradingAgent):
 
 
 class BuyBelowArrivalAgent(TradingAgent):
-    def __init__(self, env: TradingEnvironment) -> None:
-        super().__init__(env)
-        # self.arrival_price = 0.0
-
     def get_action(self, obs: Any) -> int:
         # At first step, the agent will set the arrival price
         if self.env.episode_step == 0:
-            self.arrival_price = self.env.order_data['open'][self.env.start_index]
+            self.arrival_px = self.env.order_data['open'][self.env.start_index]
             return 0
 
         px = self.env.order_data['open'][self.env.start_index + self.env.episode_step]
-        if px < self.arrival_price:
+        if px < self.arrival_px:
             self.logger.info(f'BUY: step {self.env.episode_step}')
             return 1
         return 0
