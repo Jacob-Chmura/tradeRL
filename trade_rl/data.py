@@ -1,11 +1,9 @@
 import logging
 import random
-from typing import List
 
 import numpy as np
 import pandas as pd
 
-from trade_rl.order import Order
 from trade_rl.util.args import FeatureArgs
 
 
@@ -99,33 +97,3 @@ def fill_missing_data(df: pd.DataFrame) -> pd.DataFrame:
         filled_dfs.append(df_)
     df = pd.concat(filled_dfs).dropna()
     return df
-
-
-def get_vleft_norm(remaining_qty: float, order: Order) -> float:
-    return remaining_qty / order.qty
-
-
-def get_tleft_norm(current_step: int, order: Order) -> float:
-    return (order.duration - current_step) / order.duration
-
-
-def get_vwap_norm(portfolio: List, market_vwap: int) -> float:
-    agent_vwap = np.mean(np.array(portfolio)[:, 0])
-    return agent_vwap / market_vwap if market_vwap != 0 else 0
-
-
-def get_return(previous_price: float, current_price: float) -> float:
-    return (current_price - previous_price) / previous_price
-
-
-def linear_schedule(start: float, end: float, duration: float, t: int) -> float:
-    slope = (end - start) / duration
-    return max(slope * t + start, end)
-
-
-def get_elapsed_time_percentage(market_seconds: int) -> float:
-    return market_seconds / 23400.0
-
-
-def get_volume_norm(volume: int, volume_sma: float) -> float:
-    return volume / volume_sma if volume_sma != 0 else 0

@@ -47,7 +47,7 @@ class RewardManager:
         return agent_vwap - self.benchmark()
 
     def _get_terminal_cost(self) -> float:
-        if self.env.remaining_qty == 0:
+        if self.env.info.remaining_qty == 0:
             return 0
         px = self.env.order_data['high'][self.env.episode_step]
         px *= self.terminal_cost_multiplier  # Additional cost for unfinished qty

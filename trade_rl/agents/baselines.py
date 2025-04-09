@@ -15,32 +15,17 @@ class BuyStartAgent(TradingAgent):
 
 class BuyLastAgent(TradingAgent):
     def get_action(self, obs: Any) -> int:
-        # The agent will buy shares at the end of the episode
-        if self.env.episode_step >= self.env.order.duration - self.env.order.qty:
-            self.logger.info(f'BUY: step {self.env.episode_step}')
-            return 1
-        return 0
+        return self.env.info.step >= self.env.order.duration - self.env.order.qty
 
 
 class BuyLinearScheduleAgent(TradingAgent):
     def get_action(self, obs: Any) -> int:
-        # The agent will buy shares linearly
         interval = self.env.order.duration // self.env.order.qty
-        if self.env.episode_step % interval == 0:
-            self.logger.info(f'BUY: step {self.env.episode_step}')
-            return 1
-        return 0
+        return self.env.info.step % interval == 0
 
 
 class BuyBelowArrivalAgent(TradingAgent):
     def get_action(self, obs: Any) -> int:
-        # At first step, the agent will set the arrival price
-        if self.env.episode_step == 0:
-            self.arrival_px = self.env.order_data['open'][0]
-            return 0
-
-        px = self.env.order_data['open'][self.env.episode_step]
-        if px < self.arrival_px:
-            self.logger.info(f'BUY: step {self.env.episode_step}')
-            return 1
-        return 0
+        if self.env.info.step == 0:
+            self.arrival_px = self.env.current_market_data['open']
+        return self.env.current_market_data['open'] < self.arrival_px
