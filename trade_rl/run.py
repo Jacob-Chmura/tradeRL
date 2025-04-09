@@ -11,7 +11,7 @@ def run(args: Args) -> None:
     env = TradingEnvironment(args, train_data)
     agent = agent_from_env(env, args.agent)
     with tqdm(total=args.env.max_train_steps) as pbar:
-        while env.global_step < args.env.max_train_steps:
+        while env.info.global_step < args.env.max_train_steps:
             obs, info = env.reset()
             done = False
             while not done:
@@ -30,7 +30,7 @@ def run(args: Args) -> None:
     env = TradingEnvironment(args, test_data)
     agent = agent_from_env(env, args.agent)
     with tqdm(total=args.env.max_test_steps) as pbar:
-        while env.global_step < args.env.max_test_steps:
+        while env.info.global_step < args.env.max_test_steps:
             obs, info = env.reset()
             done = False
             while not done:

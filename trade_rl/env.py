@@ -1,134 +1,177 @@
 import logging
+from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 import gymnasium as gym
+import numpy as np
 import pandas as pd
-import torch
 
-from trade_rl.data import (
-    Data,
-    get_elapsed_time_percentage,
-    get_return,
-    get_tleft_norm,
-    get_vleft_norm,
-    get_volume_norm,
-    get_vwap_norm,
-)
+from trade_rl.data import Data
 from trade_rl.order import Order, OrderGenerator
 from trade_rl.reward_manager import RewardManager
 from trade_rl.util.args import Args
 from trade_rl.util.perf import PerfTracker
 
 
+@dataclass(slots=True)
+class Info:
+    # Global Info
+    max_global_steps: int = 0
+    global_step: int = 0
+
+    # Episode Info
+    episode: int = 0
+    step: int = 0
+    order_id: str = ''
+    order_start_time: int = -1
+    order_duration: int = -1
+    order_qty: int = -1
+    order_symbol: str = ''
+    order_date: str = ''
+    qty_left: int = -1
+
+    # Performance Info
+    portfolio: Optional[List[Tuple[float, int]]] = None
+    total_reward: float = 0
+    agent_vwap: float = 0
+    arrival_slippage: float = 0
+    vwap_slippage: float = 0
+    oracle_slippage: float = 0
+
+    def new_episode(self, order: Order) -> None:
+        self.episode += 1
+        self.step = 0
+        self.order_id = order.order_id
+        self.order_start_time = order.start_time
+        self.order_duration = order.duration
+        self.order_qty = order.qty
+        self.order_symbol = order.sym
+        self.qty_left = order.qty
+        self.portfolio = []
+        self.total_reward = 0
+        self.agent_vwap = 0
+        self.arrival_slippage = 0
+        self.vwap_slippage = 0
+        self.oracle_slippage = 0
+
+    def new_step(self, action: int, current_market: Dict[str, Any]) -> None:
+        if action:
+            self.qty_left -= 1
+            self.portfolio.append((current_market['close'], self.step))  # type: ignore
+            self.agent_vwap = np.mean([x[0] for x in self.portfolio])  # type: ignore
+        self.global_step += 1
+        self.step += 1
+
+    def update_perf(self, slippages: Dict[str, float], reward: float) -> None:
+        self.arrival_slippage = slippages['arrival']
+        self.vwap_slippage = slippages['vwap']
+        self.oracle_slippage = slippages['oracle']
+        self.total_reward += reward
+
+
 class TradingEnvironment(gym.Env):
     def __init__(self, args: Args, data: Data) -> None:
         super().__init__()
+        self.data = data
+        self.info = Info()
         self.action_space = gym.spaces.Discrete(2)  # Skip or Take
         self.observation_space = gym.spaces.Box(low=0, high=1, shape=(3,))  # TODO
-        logging.info(f'Created Environment')
-        self.tracker = PerfTracker(args)
+
         self.reward_manager = RewardManager(self, args.env.reward_args)
-
-        # TODO: Careful about using max steps for train/test
-        self.max_global_step = args.env.max_train_steps
-        self.global_step = 0
-        self.episode = 0
-        self.episode_step = 0
-        self.episode_return = 0
-
-        self.portfolio: List[Tuple[float, int]] = []
-
-        self.data = data
         self.order_generator = OrderGenerator(args.env.order_gen_args)
-        self.order, self.order_data, self.start_index, self.max_steps = (
-            self._new_order()
-        )
-        self.remaining_qty = self.order.qty
+        self.tracker = PerfTracker(list(asdict(self.info)), args)
+
+        self.day_data = self._new_order()
+        logging.info(f'Created Environment')
 
     def reset(
         self, seed: Optional[int] = None, options: Optional[dict] = None
     ) -> Tuple[Any, ...]:
         super().reset(seed=seed)
-        self.tracker(self)
-        self.order, self.order_data, self.start_index, self.max_steps = (
-            self._new_order()
-        )
-        return self._get_obs(), self._get_info()
+        self.tracker(asdict(self.info))
+        self.day_data = self._new_order()
+        return self._get_obs(), asdict(self.info)
 
     def step(self, action: int) -> Tuple[Any, ...]:
-        if action:
-            price = self.order_data['close'].iloc[self.start_index + self.episode_step]
-            self.portfolio.append((price, self.episode_step))
-
-        self.remaining_qty -= action
-        terminated = self.episode_step >= self.max_steps or self.remaining_qty == 0
+        self.info.new_step(action, self.current_market)
+        done = self.info.step >= self.info.order_duration or self.info.qty_left == 0
         truncated = False
-        reward = self.reward_manager(terminated)
-        obs, info = self._get_obs(), self._get_info()
-        self.global_step += 1
-        self.episode_step += 1
-        return obs, reward, terminated, truncated, info
+        slippages, reward = self.reward_manager(done)
+        self.info.update_perf(slippages, reward)
+        obs, info = self._get_obs(), asdict(self.info)
+        logging.debug(info)
+        return obs, reward, done, truncated, info
 
-    def _get_obs(self) -> Any:
-        return self.order_data.iloc[self.start_index + self.episode_step]
+    @property
+    def current_market(self) -> Dict[str, Any]:
+        return self._get_market_data(self.info.order_start_time + self.info.step)
 
-    def _get_info(self) -> Dict[Any, Any]:
-        return {
-            'global_step': self.global_step,
-            'max_global_step': self.max_global_step,
-        }
+    @property
+    def previous_market(self) -> Dict[str, Any]:
+        return self._get_market_data(self.info.order_start_time + self.info.step - 1)
 
-    def _new_order(self) -> Tuple[Order, pd.DataFrame, int, int]:
-        self.episode += 1
-        self.episode_step = self.episode_return = 0
-        self.portfolio = []
+    @property
+    def order_arrival_market(self) -> Dict[str, Any]:
+        return self.day_data.iloc[self.info.order_start_time].to_dict()
+
+    @property
+    def market_open(self) -> Dict[str, Any]:
+        return self._get_market_data(i=0)
+
+    @property
+    def order_duration_market(self) -> pd.DataFrame:
+        order_end_time = self.info.order_start_time + self.info.order_duration
+        order_mask = self.day_data.market_second.between(
+            self.info.order_start_time, order_end_time
+        )
+        return self.day_data[order_mask].reset_index(drop=True)
+
+    def _new_order(self) -> pd.DataFrame:
         order = self.order_generator()
-        order_data, start_index, max_steps = self.data.get_order_data(
-            order.start_time, order.end_time
-        )
         logging.debug(f'New order: {order}')
-        return order, order_data, start_index, max_steps
+        self.info.new_episode(order)
+        self.info.order_date, day_data = self.data.get_random_day_of_data()
+        return day_data
 
-    def _compute_feature_vector(self) -> torch.Tensor:
-        # Price features
-        current_index = self.start_index + self.episode_step
-        current_price = self.order_data['open'][current_index]
-        all_current_day_prices = self.order_data['open'][: current_index + 1]
-        max_day_price = max(all_current_day_prices)
-        min_day_price = min(all_current_day_prices)
-        previous_price = self.order_data['open'][current_index - 1]
-        episode_first_price = self.order_data['open'][self.start_index]
-        day_first_price = self.order_data['open'][0]
-        current_market_vwap = self.order_data['vwap'][current_index - 1]
+    def _get_obs(self) -> np.ndarray:
+        current_market = self.current_market
+        previous_market = self.previous_market
+        order_arrival_market = self.order_arrival_market
+        market_open = self.market_open
 
-        # Time features
-        market_second = self.order_data['market_second'][current_index]
+        day_pxs = self.day_data['open'][: self.info.order_start_time + self.info.step]
+        get_return = lambda prev, curr: (curr - prev) / prev
 
-        # Volume features
-        prev_volume = self.order_data['volume'][current_index - 1]
-        volume_sma = self.order_data['volume_sma'][current_index - 1]
-
-        return torch.tensor(
+        obs = np.array(
             [
-                get_vleft_norm(self.remaining_qty, self.order),
-                get_tleft_norm(self.episode_step, self.order),
-                get_return(previous_price, current_price),
-                get_return(day_first_price, current_price),
-                get_return(episode_first_price, current_price),
-                get_return(max_day_price, current_price),
-                get_return(min_day_price, current_price),
-                get_elapsed_time_percentage(market_second),
-                get_vwap_norm(self.portfolio, current_market_vwap),
-                get_volume_norm(prev_volume, volume_sma),
-                self.order_data['sma_return_short'][current_index],
-                self.order_data['sma_return_long'][current_index],
-                self.order_data['ema_return_short'][current_index],
-                self.order_data['ema_return_long'][current_index],
-                self.order_data['macd'][current_index],
-                self.order_data['signal'][current_index],
-                self.order_data['volatility'][current_index],
-                self.order_data['rsi'][current_index],
-                self.order_data['bollinger_percentage'][current_index],
-                self.order_data['stoch_k'][current_index],
+                self.info.qty_left / self.info.order_qty,
+                self.info.step / self.info.order_duration,
+                get_return(previous_market['open'], current_market['open']),
+                get_return(market_open['open'], current_market['open']),
+                get_return(order_arrival_market['open'], current_market['open']),
+                get_return(min(day_pxs), current_market['open']),
+                get_return(max(day_pxs), current_market['open']),
+                self.info.agent_vwap / previous_market['vwap']
+                if previous_market['vwap'] != 0
+                else 0,
+                previous_market['volume'] / previous_market['volume_sma']
+                if previous_market['volume_sma'] != 0
+                else 0,
+                current_market['market_second'] / 23400,
+                current_market['sma_return_short'],
+                current_market['sma_return_long'],
+                current_market['ema_return_short'],
+                current_market['ema_return_long'],
+                current_market['macd'],
+                current_market['signal'],
+                current_market['volatility'],
+                current_market['rsi'],
+                current_market['bollinger_percentage'],
+                current_market['stoch_k'],
             ]
-        )
+        ).clip(-3, 3)
+        obs[np.isnan(obs)] = 0.0
+        return obs
+
+    def _get_market_data(self, i: int) -> Dict[str, Any]:
+        return self.day_data.iloc[i].to_dict()

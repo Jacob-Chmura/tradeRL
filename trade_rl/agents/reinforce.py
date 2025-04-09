@@ -10,8 +10,13 @@ from trade_rl.agents.base import TradingAgent
 from trade_rl.env import TradingEnvironment
 from trade_rl.util.args import ReinforceArgs
 
-# TODO: Linear Schedule
 # TODO: Consider GAE or critic for stability
+
+
+# TODO: Linear decay softmax explore
+def linear_schedule(start: float, end: float, duration: float, t: int) -> float:
+    slope = (end - start) / duration
+    return max(slope * t + start, end)
 
 
 class ReinforceAgent(TradingAgent):

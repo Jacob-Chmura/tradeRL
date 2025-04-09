@@ -10,7 +10,12 @@ from trade_rl.agents.base import TradingAgent
 from trade_rl.env import TradingEnvironment
 from trade_rl.util.args import DQNArgs
 
+
 # TODO: Consider adding target net for stability
+# TODO: Linear decay eps-greedy
+def linear_schedule(start: float, end: float, duration: float, t: int) -> float:
+    slope = (end - start) / duration
+    return max(slope * t + start, end)
 
 
 class DQNAgent(TradingAgent):
