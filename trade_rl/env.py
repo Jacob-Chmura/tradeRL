@@ -16,7 +16,6 @@ from trade_rl.util.perf import PerfTracker
 @dataclass(slots=True)
 class Info:
     # Global Info
-    max_global_steps: int = 0
     global_step: int = 0
 
     # Episode Info
@@ -68,6 +67,11 @@ class Info:
         self.oracle_slippage = slippages['oracle']
         self.total_reward += reward
 
+    def to_dict(self) -> Dict[str, Any]:
+        d = asdict(self)
+        d.pop('portfolio')  # Don't serialized this
+        return d
+
 
 class TradingEnvironment(gym.Env):
     def __init__(self, args: Args, data: Data) -> None:
@@ -79,16 +83,16 @@ class TradingEnvironment(gym.Env):
 
         self.reward_manager = RewardManager(self, args.env.reward_args)
         self.order_generator = OrderGenerator(args.env.order_gen_args)
-        self.tracker = PerfTracker(list(asdict(self.info)), args)
+        self.tracker = PerfTracker(list(self.info.to_dict().keys()), args)
         self.day_data = self._new_order()
 
     def reset(
         self, seed: Optional[int] = None, options: Optional[dict] = None
     ) -> Tuple[Any, ...]:
         super().reset(seed=seed)
-        self.tracker(asdict(self.info))
+        self.tracker(self.info.to_dict())
         self.day_data = self._new_order()
-        return self._get_obs(), asdict(self.info)
+        return self._get_obs(), self.info.to_dict()
 
     def step(self, action: int) -> Tuple[Any, ...]:
         self.info.new_step(action, self.current_market)
@@ -96,7 +100,7 @@ class TradingEnvironment(gym.Env):
         truncated = False
         slippages, reward = self.reward_manager(done)
         self.info.update_perf(slippages, reward)
-        obs, info = self._get_obs(), asdict(self.info)
+        obs, info = self._get_obs(), self.info.to_dict()
         logging.debug(info)
         return obs, reward, done, truncated, info
 
