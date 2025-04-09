@@ -102,7 +102,7 @@ class TradingEnvironment(gym.Env):
         current_market_vwap = self.order_data['vwap'][current_index - 1]
 
         # Time features
-        market_seconds = self.order_data['market_second'][current_index]
+        market_second = self.order_data['market_second'][current_index]
 
         # Volume features
         prev_volume = self.order_data['volume'][current_index - 1]
@@ -117,7 +117,7 @@ class TradingEnvironment(gym.Env):
                 get_return(episode_first_price, current_price),
                 get_return(max_day_price, current_price),
                 get_return(min_day_price, current_price),
-                get_elapsed_time_percentage(market_seconds),
+                get_elapsed_time_percentage(market_second),
                 get_vwap_norm(self.portfolio, current_market_vwap),
                 get_volume_norm(prev_volume, volume_sma),
                 self.order_data['sma_return_short'][current_index],

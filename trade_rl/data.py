@@ -17,21 +17,18 @@ class Data:
             data_path = feature_args.test_data_path
 
         logging.debug(f'Reading raw data from: {data_path}')
-        self.data = pd.read_parquet(data_path)
-        logging.debug(f'Read {self.data.memory_usage(deep=True).sum() / 1e9} GB')
-        self.unique_days = self.data['date'].unique()
-        self.data = preprocess_data(self.data, feature_args)
+        data = pd.read_parquet(data_path)
+        logging.debug(f'Read {data.memory_usage(deep=True).sum() / 1e9} GB')
+        self.unique_days = data['date'].unique()
+        self.data = preprocess_data(data, feature_args)
 
     def get_order_data(
         self, start_time: int, max_steps: int
     ) -> Tuple[pd.DataFrame, int, int]:
         date = random.choice(self.unique_days)
-        max_end_time = start_time + max_steps
-        mask = (self.data.date == date) & (self.data.market_seconds <= max_end_time)
-        data = self.data[mask].copy()
-
-        order_start_index = len(data[data.market_seconds < start_time])
-        max_steps = len(data) - order_start_index - 1  # TODO: 'Fill in' with data
+        data = self.data[self.data.date == date].copy()
+        order_start_index = len(data[data.market_second < start_time])
+        max_steps = min(max_steps, len(data) - order_start_index - 1)
         return data, order_start_index, max_steps
 
 
@@ -40,9 +37,7 @@ def preprocess_data(data: pd.DataFrame, feature_args: FeatureArgs) -> pd.DataFra
     mid_window = feature_args.medium_window
     long_window = feature_args.long_window
 
-    df = data.copy()
-    df = fill_missing_data(df)
-
+    df = fill_missing_data(data)
     df['log_return'] = np.log(df['open'] / df['open'].shift(1))
     df['log_return'] = df['log_return'].fillna(0)
 
@@ -93,69 +88,22 @@ def preprocess_data(data: pd.DataFrame, feature_args: FeatureArgs) -> pd.DataFra
 
 
 def fill_missing_data(df: pd.DataFrame) -> pd.DataFrame:
-    symbol = df['symbol'].iloc[0]
-    # Combine 'data' and 'time' columns into a single datetime column
-    df['datetime'] = pd.to_datetime(
-        df['date'].astype(str) + ' ' + df['time'].astype(str)
-    )
-    df.set_index('datetime', inplace=True)
-
-    # Only keep necessary columns
-    ohlcv_cols = ['open', 'high', 'low', 'close', 'volume']
-    df = df[ohlcv_cols]
-
-    # Get unique dates
-    all_dates = df.index.normalize().unique()
-
     filled_dfs = []
+    for (date, sym), df_ in df.groupby(['date', 'symbol']):
+        df_ = df_.set_index('market_second')
+        df_ = df_.reindex(pd.RangeIndex(23400))
 
-    for date in all_dates:
-        # Create a full date range of seconds for the trading day
-        start = pd.Timestamp(date) + pd.Timedelta(hours=9, minutes=30)
-        end = pd.Timestamp(date) + pd.Timedelta(hours=16)
-        full_range = pd.date_range(start=start, end=end, freq='s')
+        ochl_cols = ['open', 'high', 'low', 'close']
+        df_[ochl_cols] = df_[ochl_cols].ffill()
+        df_['volume'] = df_['volume'].fillna(0)
+        df_ = df_[ochl_cols + ['volume']]
 
-        # Filter the DataFrame for the current trading day
-        df_day = df.loc[(df.index >= start) & (df.index <= end)]
-
-        # Reindex to full 1-second range
-        df_day_filled = df_day.reindex(full_range)
-
-        # Forward fill OHLC values and fill volume with 0
-        df_day_filled[['open', 'high', 'low', 'close']] = df_day_filled[
-            ['open', 'high', 'low', 'close']
-        ].ffill()
-        df_day_filled['volume'] = df_day_filled['volume'].fillna(0)
-        df_day_filled['market_seconds'] = (
-            (df_day_filled.index - start).total_seconds().astype(int)
-        )
-
-        filled_dfs.append(df_day_filled)
-
-    # Concatenate all the filled daily data
-    df_filled = pd.concat(filled_dfs)
-
-    df_filled = df_filled.reset_index().rename(columns={'index': 'datetime'})
-    df_filled['date'] = df_filled['datetime'].dt.date
-    df_filled['time'] = df_filled['datetime'].dt.time
-    df_filled['symbol'] = symbol
-    df_filled.drop(columns=['datetime'], inplace=True)
-    df_filled = df_filled[
-        [
-            'date',
-            'time',
-            'market_seconds',
-            'symbol',
-            'open',
-            'high',
-            'low',
-            'close',
-            'volume',
-        ]
-    ]
-    df_filled.dropna(inplace=True)
-    df_filled.reset_index(drop=True, inplace=True)
-    return df_filled
+        df_['date'] = date
+        df_['symbol'] = sym
+        df_ = df_.reset_index(names=['market_second'])
+        filled_dfs.append(df_)
+    df = pd.concat(filled_dfs).dropna()
+    return df
 
 
 def get_vleft_norm(remaining_qty: float, order: Order) -> float:
