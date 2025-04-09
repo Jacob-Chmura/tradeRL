@@ -5,9 +5,7 @@ import gymnasium as gym
 import pandas as pd
 import torch
 
-from trade_rl.order import Order, OrderGenerator
-from trade_rl.util.args import Args
-from trade_rl.util.data import (
+from trade_rl.data import (
     Data,
     get_elapsed_time_percentage,
     get_return,
@@ -16,8 +14,10 @@ from trade_rl.util.data import (
     get_volume_norm,
     get_vwap_norm,
 )
+from trade_rl.order import Order, OrderGenerator
+from trade_rl.reward_manager import RewardManager
+from trade_rl.util.args import Args
 from trade_rl.util.perf import PerfTracker
-from trade_rl.util.reward_manager import RewardManager
 
 
 class TradingEnvironment(gym.Env):

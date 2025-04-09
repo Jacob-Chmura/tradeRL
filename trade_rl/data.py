@@ -35,6 +35,63 @@ class Data:
         return data, order_start_index, max_steps
 
 
+def preprocess_data(data: pd.DataFrame, feature_args: FeatureArgs) -> pd.DataFrame:
+    short_window = feature_args.short_window
+    mid_window = feature_args.medium_window
+    long_window = feature_args.long_window
+
+    df = data.copy()
+    df = fill_missing_data(df)
+
+    df['log_return'] = np.log(df['open'] / df['open'].shift(1))
+    df['log_return'] = df['log_return'].fillna(0)
+
+    # Long and short moving averages
+    df['sma_return_short'] = df['log_return'].rolling(window=short_window).mean()
+    df['sma_return_long'] = df['log_return'].rolling(window=long_window).mean()
+
+    # Long and short exponential moving averages
+    df['ema_return_short'] = df['log_return'].ewm(span=short_window).mean()
+    df['ema_return_long'] = df['log_return'].ewm(span=long_window).mean()
+
+    # MACD (Moving Average Convergence Divergence)
+    df['macd'] = df['ema_return_short'] - df['ema_return_long']
+    df['signal'] = df['macd'].ewm(span=mid_window).mean()
+
+    # Volatility
+    df['volatility'] = df['log_return'].rolling(window=mid_window).std()
+    df['volatility'] = df['volatility'].fillna(0)
+
+    # Relative strength index (RSI)
+    delta = df['close'].diff()
+    gain = np.where(delta > 0, delta, 0)
+    loss = np.where(delta < 0, -delta, 0)
+    avg_gain = pd.Series(gain).rolling(window=long_window).mean()
+    avg_loss = pd.Series(loss).rolling(window=long_window).mean()
+    rs = avg_gain / (avg_loss + 1e-9)
+    df['rsi'] = 100 - (100 / (1 + rs))
+
+    # Bollinger bands percentage
+    sma_20 = df['open'].rolling(long_window).mean()
+    std_20 = df['open'].rolling(long_window).std()
+    upper = sma_20 + 2 * std_20
+    lower = sma_20 - 2 * std_20
+    df['bollinger_percentage'] = (df['open'] - lower) / (upper - lower + 1e-9)
+
+    # %K of stochastic oscillator
+    lowest = df['low'].rolling(long_window).min()
+    highest = df['high'].rolling(long_window).max()
+    df['stoch_k'] = (df['open'] - lowest) / (highest - lowest + 1e-9)
+
+    # VWAP (Volume Weighted Average Price)
+    df['vwap'] = (df['volume'] * df['open']).cumsum() / df['volume'].cumsum()
+
+    # Volume moving average
+    df['volume_sma'] = df['volume'].rolling(window=long_window).mean()
+
+    return df
+
+
 def fill_missing_data(df: pd.DataFrame) -> pd.DataFrame:
     symbol = df['symbol'].iloc[0]
     # Combine 'data' and 'time' columns into a single datetime column
@@ -99,63 +156,6 @@ def fill_missing_data(df: pd.DataFrame) -> pd.DataFrame:
     df_filled.dropna(inplace=True)
     df_filled.reset_index(drop=True, inplace=True)
     return df_filled
-
-
-def preprocess_data(data: pd.DataFrame, feature_args: FeatureArgs) -> pd.DataFrame:
-    short_window = feature_args.short_window
-    mid_window = feature_args.medium_window
-    long_window = feature_args.long_window
-
-    df = data.copy()
-    df = fill_missing_data(df)
-
-    df['log_return'] = np.log(df['open'] / df['open'].shift(1))
-    df['log_return'] = df['log_return'].fillna(0)
-
-    # Long and short moving averages
-    df['sma_return_short'] = df['log_return'].rolling(window=short_window).mean()
-    df['sma_return_long'] = df['log_return'].rolling(window=long_window).mean()
-
-    # Long and short exponential moving averages
-    df['ema_return_short'] = df['log_return'].ewm(span=short_window).mean()
-    df['ema_return_long'] = df['log_return'].ewm(span=long_window).mean()
-
-    # MACD (Moving Average Convergence Divergence)
-    df['macd'] = df['ema_return_short'] - df['ema_return_long']
-    df['signal'] = df['macd'].ewm(span=mid_window).mean()
-
-    # Volatility
-    df['volatility'] = df['log_return'].rolling(window=mid_window).std()
-    df['volatility'] = df['volatility'].fillna(0)
-
-    # Relative strength index (RSI)
-    delta = df['close'].diff()
-    gain = np.where(delta > 0, delta, 0)
-    loss = np.where(delta < 0, -delta, 0)
-    avg_gain = pd.Series(gain).rolling(window=long_window).mean()
-    avg_loss = pd.Series(loss).rolling(window=long_window).mean()
-    rs = avg_gain / (avg_loss + 1e-9)
-    df['rsi'] = 100 - (100 / (1 + rs))
-
-    # Bollinger bands percentage
-    sma_20 = df['open'].rolling(long_window).mean()
-    std_20 = df['open'].rolling(long_window).std()
-    upper = sma_20 + 2 * std_20
-    lower = sma_20 - 2 * std_20
-    df['bollinger_percentage'] = (df['open'] - lower) / (upper - lower + 1e-9)
-
-    # %K of stochastic oscillator
-    lowest = df['low'].rolling(long_window).min()
-    highest = df['high'].rolling(long_window).max()
-    df['stoch_k'] = (df['open'] - lowest) / (highest - lowest + 1e-9)
-
-    # VWAP (Volume Weighted Average Price)
-    df['vwap'] = (df['volume'] * df['open']).cumsum() / df['volume'].cumsum()
-
-    # Volume moving average
-    df['volume_sma'] = df['volume'].rolling(window=long_window).mean()
-
-    return df
 
 
 def get_vleft_norm(remaining_qty: float, order: Order) -> float:
