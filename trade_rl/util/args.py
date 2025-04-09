@@ -1,5 +1,5 @@
 import pathlib
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Optional
 
 import yaml  # type: ignore
@@ -9,9 +9,9 @@ from trade_rl.util.path import get_root_dir
 
 @dataclass(slots=True)
 class MetaArgs:
-    experiment_name: str = field(metadata={'help': 'Name of experiment'})
-    log_file_path: Optional[str] = field(metadata={'help': 'Path to log file.'})
-    global_seed: int = field(default=1337, metadata={'help': 'Random seed.'})
+    experiment_name: str
+    log_file_path: Optional[str]
+    global_seed: int
 
     def __post_init__(self) -> None:
         if self.log_file_path is not None:
@@ -23,34 +23,32 @@ class OrderGenArgs:
     sym_spec: List[str]
     qty_spec: List[int]
     start_time_spec: List[int]
-    end_time_spec: List[int]
+    duration_spec: List[int]
 
 
 @dataclass(slots=True)
 class FeatureArgs:
-    train_data_path: str = field(metadata={'help': 'Path to train data'})
-    test_data_path: str = field(metadata={'help': 'Path to test data'})
-    short_window: int = field(metadata={'help': 'Short-term rolling window size'})
-    medium_window: int = field(metadata={'help': 'Mid-term rolling window size'})
-    long_window: int = field(metadata={'help': 'Long-term rolling window size'})
+    train_data_path: str
+    test_data_path: str
+    short_window: int
+    medium_window: int
+    long_window: int
 
 
 @dataclass(slots=True)
 class RewardArgs:
-    reward_type: str = field(metadata={'help': 'Type of reward to use'})
-    termination_px_cost_multiplier: float = field(
-        metadata={'help': 'Extra cost multiplier for unfinished qty at end of order'}
-    )
+    reward_type: str
+    termination_px_cost_multiplier: float
 
 
 @dataclass(slots=True)
 class EnvironmentArgs:
-    env_name: str = field(metadata={'help': 'Gymanasium registered environment name'})
-    max_train_steps: int = field(metadata={'help': 'Total train steps to run for'})
-    max_test_steps: int = field(metadata={'help': 'Total test steps to run for'})
-    order_gen_args: OrderGenArgs = field(metadata={'help': 'Order generator params'})
-    feature_args: FeatureArgs = field(metadata={'help': 'Feature arguments'})
-    reward_args: RewardArgs = field(metadata={'help': 'Reward arguments'})
+    env_name: str
+    max_train_steps: int
+    max_test_steps: int
+    order_gen_args: OrderGenArgs
+    feature_args: FeatureArgs
+    reward_args: RewardArgs
 
     def __post_init__(self) -> None:
         self.order_gen_args = OrderGenArgs(**self.order_gen_args)  # type: ignore
@@ -60,26 +58,26 @@ class EnvironmentArgs:
 
 @dataclass(slots=True)
 class DQNArgs:
-    lr: float = field(metadata={'help': 'Learning rate'})
-    gamma: float = field(metadata={'help': 'Discount factor'})
-    batch_size: int = field(metadata={'help': 'Batch size from replay buffer'})
-    buffer_size: int = field(metadata={'help': 'Max experience replay buffer size'})
-    eps: float = field(metadata={'help': 'Epsilon random exploration probability'})
+    lr: float
+    gamma: float
+    batch_size: int
+    buffer_size: int
+    eps: float
 
 
 @dataclass(slots=True)
 class ReinforceArgs:
-    lr: float = field(metadata={'help': 'Learning rate'})
-    gamma: float = field(metadata={'help': 'Discount factor'})
-    batch_size: int = field(metadata={'help': 'Batch size from replay buffer'})
-    temp: float = field(metadata={'help': 'Softmax temperature for exploration'})
+    lr: float
+    gamma: float
+    batch_size: int
+    temp: float
 
 
 @dataclass(slots=True)
 class AgentArgs:
-    agent_type: str = field(metadata={'help': 'Agent type to use'})
-    dqn_args: DQNArgs = field(metadata={'help': 'DQN Agent args'})
-    reinforce_args: ReinforceArgs = field(metadata={'help': 'Reinforce Agent args'})
+    agent_type: str
+    dqn_args: DQNArgs
+    reinforce_args: ReinforceArgs
 
     def __post_init__(self) -> None:
         self.dqn_args = DQNArgs(**self.dqn_args)  # type: ignore

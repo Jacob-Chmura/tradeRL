@@ -111,7 +111,7 @@ def get_vleft_norm(remaining_qty: float, order: Order) -> float:
 
 
 def get_tleft_norm(current_step: int, order: Order) -> float:
-    return (order.end_time - current_step) / order.end_time
+    return (order.duration - current_step) / order.duration
 
 
 def get_vwap_norm(portfolio: List, market_vwap: int) -> float:

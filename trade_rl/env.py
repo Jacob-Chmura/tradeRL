@@ -84,7 +84,7 @@ class TradingEnvironment(gym.Env):
         self.portfolio = []
         order = self.order_generator()
         order_data, start_index, max_steps = self.data.get_order_data(
-            order.start_time, order.end_time
+            order.start_time, order.duration
         )
         logging.debug(f'New order: {order}')
         return order, order_data, start_index, max_steps

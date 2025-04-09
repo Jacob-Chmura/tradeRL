@@ -16,7 +16,7 @@ class BuyStartAgent(TradingAgent):
 class BuyLastAgent(TradingAgent):
     def get_action(self, obs: Any) -> int:
         # The agent will buy shares at the end of the episode
-        if self.env.episode_step >= self.env.order.end_time - self.env.order.qty:
+        if self.env.episode_step >= self.env.order.duration - self.env.order.qty:
             self.logger.info(f'BUY: step {self.env.episode_step}')
             return 1
         return 0
@@ -25,7 +25,7 @@ class BuyLastAgent(TradingAgent):
 class BuyLinearScheduleAgent(TradingAgent):
     def get_action(self, obs: Any) -> int:
         # The agent will buy shares linearly
-        interval = self.env.order.end_time // self.env.order.qty
+        interval = self.env.order.duration // self.env.order.qty
         if self.env.episode_step % interval == 0:
             self.logger.info(f'BUY: step {self.env.episode_step}')
             return 1
