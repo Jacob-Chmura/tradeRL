@@ -7,8 +7,8 @@ import torch
 
 from trade_rl.order import Order, OrderGenerator
 from trade_rl.util.args import Args
-from trade_rl.util.data import Data
-from trade_rl.util.feature_engineering import (
+from trade_rl.util.data import (
+    Data,
     get_elapsed_time_percentage,
     get_return,
     get_tleft_norm,
