@@ -1,9 +1,9 @@
 from tqdm import tqdm
 
 from trade_rl.agents import agent_from_env
+from trade_rl.data import Data
 from trade_rl.env import TradingEnvironment
 from trade_rl.util.args import Args
-from trade_rl.util.data import Data
 
 
 def run(args: Args) -> None:
