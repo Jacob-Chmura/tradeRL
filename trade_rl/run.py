@@ -24,14 +24,14 @@ def train(data: Data, tracker: PerfTracker, args: Args) -> None:
     env = TradingEnvironment(args, data)
     agent = agent_from_env(env, args.agent)
 
-    with tqdm(total=args.env.max_train_steps) as pbar:
-        while env.info.global_step < args.env.max_train_steps:
+    with tqdm(total=env.max_train_steps) as pbar:
+        while env.info.global_step < env.max_train_steps:
             obs, info = env.reset()
             done = False
             while not done:
                 action = agent.get_action(obs)
                 next_obs, reward, terminated, truncated, info = env.step(action)
-                agent.update(obs, action, reward, terminated, next_obs)
+                agent.update(obs, action, reward, terminated, next_obs, info)
                 done = terminated or truncated
                 obs = next_obs
                 pbar.update(1)
@@ -45,8 +45,8 @@ def test(data: Data, tracker: PerfTracker, args: Args) -> None:
     agent = agent_from_env(env, args.agent)
     agent.load_model(tracker.log_dir)
 
-    with tqdm(total=args.env.max_test_steps) as pbar:
-        while env.info.global_step < args.env.max_test_steps:
+    with tqdm(total=env.max_test_steps) as pbar:
+        while env.info.global_step < env.max_test_steps:
             obs, info = env.reset()
             done = False
             while not done:

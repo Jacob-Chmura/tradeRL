@@ -1,7 +1,7 @@
 import pathlib
 import random
 from collections import deque, namedtuple
-from typing import Any, Deque
+from typing import Any, Deque, Dict
 
 import torch
 import torch.nn as nn
@@ -11,12 +11,7 @@ from trade_rl.agents.base import TradingAgent
 from trade_rl.env import TradingEnvironment
 from trade_rl.util.args import DQNArgs
 
-
 # TODO: Consider adding target net for stability
-# TODO: Linear decay eps-greedy
-def linear_schedule(start: float, end: float, duration: float, t: int) -> float:
-    slope = (end - start) / duration
-    return max(slope * t + start, end)
 
 
 class DQNAgent(TradingAgent):
@@ -30,7 +25,9 @@ class DQNAgent(TradingAgent):
         self.qnet = DQN(obs_dim=obs_dim, action_dim=action_dim).to(self.device)
         self.opt = torch.optim.Adam(self.qnet.parameters(), lr=args.lr)
         self.memory = ReplayBuffer(args.buffer_size)
-        self.eps = args.eps
+
+        self.eps = self.eps_start = args.eps_start
+        self.eps_end = args.eps_end
         self.batch_size = args.batch_size
         self.gamma = args.gamma
 
@@ -42,8 +39,18 @@ class DQNAgent(TradingAgent):
             return self.qnet(obs_).argmax().cpu().item()
 
     def update(
-        self, obs: Any, action: int, reward: float, terminated: bool, next_obs: Any
+        self,
+        obs: Any,
+        action: int,
+        reward: float,
+        terminated: bool,
+        next_obs: Any,
+        info: Dict[str, Any],
     ) -> None:
+        self.eps = self.linear_schedule(
+            self.eps_start, self.eps_end, info['global_step']
+        )
+
         _tensorify = lambda x, dtype: torch.tensor(x, dtype=dtype, device=self.device)
         obs_ = _tensorify(obs[None, :], torch.float32)
         next_obs_ = _tensorify(next_obs[None, :], torch.float32)
@@ -52,24 +59,11 @@ class DQNAgent(TradingAgent):
         terminated_ = _tensorify([terminated], torch.float32)
         self.memory.push(obs_, action_, next_obs_, reward_, terminated_)
 
-        if len(self.memory) < self.batch_size:
-            return
-
-        transitions = self.memory.sample(self.batch_size)
-        batch = Transition(*zip(*transitions))
-        obs_ = torch.cat(batch.obs)
-        next_obs_ = torch.cat(batch.next_obs)
-        action_ = torch.cat(batch.action)
-        reward_ = torch.cat(batch.reward)
-        done_ = torch.cat(batch.done)
-
-        q = self.qnet(obs_).gather(1, action_.unsqueeze(1)).squeeze()
-        with torch.no_grad():
-            target = reward_ + (1 - done_) * self.gamma * self.qnet(next_obs_).max(1)[0]
-        loss = F.mse_loss(q, target)
-        self.opt.zero_grad()
-        loss.backward()
-        self.opt.step()
+        if len(self.memory) >= self.batch_size:
+            loss = self._get_loss()
+            self.opt.zero_grad()
+            loss.backward()
+            self.opt.step()
 
     def save_model(self, path: str | pathlib.Path) -> None:
         path = pathlib.Path(path) / f'{self.__class__.__name__}_dqn.pt'
@@ -83,6 +77,21 @@ class DQNAgent(TradingAgent):
         self.qnet.load_state_dict(torch.load(path, weights_only=True))
         self.qnet.eval()
         self.logger.info(f'Loaded model from: {path}')
+
+    def _get_loss(self) -> torch.Tensor:
+        transitions = self.memory.sample(self.batch_size)
+        batch = Transition(*zip(*transitions))
+        obs_ = torch.cat(batch.obs)
+        next_obs_ = torch.cat(batch.next_obs)
+        action_ = torch.cat(batch.action)
+        reward_ = torch.cat(batch.reward)
+        done_ = torch.cat(batch.done)
+
+        q = self.qnet(obs_).gather(1, action_.unsqueeze(1)).squeeze()
+        with torch.no_grad():
+            target = reward_ + (1 - done_) * self.gamma * self.qnet(next_obs_).max(1)[0]
+        loss = F.mse_loss(q, target)
+        return loss
 
 
 class DQN(nn.Module):

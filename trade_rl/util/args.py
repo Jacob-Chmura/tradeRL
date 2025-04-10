@@ -63,7 +63,8 @@ class DQNArgs:
     gamma: float
     batch_size: int
     buffer_size: int
-    eps: float
+    eps_start: float
+    eps_end: float
 
 
 @dataclass(slots=True)
@@ -71,7 +72,8 @@ class ReinforceArgs:
     lr: float
     gamma: float
     batch_size: int
-    temp: float
+    temp_start: float
+    temp_end: float
 
 
 @dataclass(slots=True)
