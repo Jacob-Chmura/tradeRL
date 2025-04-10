@@ -84,6 +84,8 @@ class TradingEnvironment(gym.Env):
         self.info = Info()
         self.action_space = gym.spaces.Discrete(2)  # Skip or Take
         self.observation_space = gym.spaces.Box(low=-3, high=3, shape=(self.OBS_DIM,))
+        self.max_train_steps = args.env.max_train_steps
+        self.max_test_steps = args.env.max_test_steps
 
         self.reward_manager = RewardManager(self, args.env.reward_args)
         self.order_generator = OrderGenerator(args.env.order_gen_args)

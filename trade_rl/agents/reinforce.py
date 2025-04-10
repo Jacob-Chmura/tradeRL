@@ -1,6 +1,6 @@
 import pathlib
 from collections import deque
-from typing import Any, Deque, List
+from typing import Any, Deque, Dict, List
 
 import torch
 import torch.nn as nn
@@ -14,12 +14,6 @@ from trade_rl.util.args import ReinforceArgs
 # TODO: Consider GAE or critic for stability
 
 
-# TODO: Linear decay softmax explore
-def linear_schedule(start: float, end: float, duration: float, t: int) -> float:
-    slope = (end - start) / duration
-    return max(slope * t + start, end)
-
-
 class ReinforceAgent(TradingAgent):
     def __init__(self, env: TradingEnvironment, args: ReinforceArgs) -> None:
         super().__init__(env)
@@ -30,7 +24,9 @@ class ReinforceAgent(TradingAgent):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.policy = Policy(obs_dim, action_dim).to(self.device)
         self.opt = torch.optim.Adam(self.policy.parameters(), lr=args.lr)
-        self.temp = args.temp
+
+        self.temp = self.temp_start = args.temp_start
+        self.temp_end = args.temp_end
         self.batch_size = args.batch_size
         self.gamma = args.gamma
 
@@ -47,16 +43,23 @@ class ReinforceAgent(TradingAgent):
         return int(action)
 
     def update(
-        self, obs: Any, action: int, reward: float, terminated: bool, next_obs: Any
+        self,
+        obs: Any,
+        action: int,
+        reward: float,
+        terminated: bool,
+        next_obs: Any,
+        info: Dict[str, Any],
     ) -> None:
+        self.temp = self.linear_schedule(
+            self.temp_start, self.temp_end, info['gloal_step']
+        )
         self.rewards.append(reward)
         if len(self.rewards) % self.batch_size == 0:
             loss = self._get_loss()
             self.opt.zero_grad()
             loss.backward()
             self.opt.step()
-
-            self._update_temperature()
             self.rewards, self.log_probs = [], []
 
     def save_model(self, path: str | pathlib.Path) -> None:
@@ -88,8 +91,6 @@ class ReinforceAgent(TradingAgent):
 
         loss = torch.stack(policy_loss).sum()
         return loss
-
-    def _update_temperature(self) -> None: ...
 
 
 class Policy(nn.Module):
