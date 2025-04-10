@@ -2,8 +2,9 @@ from tqdm import tqdm
 
 from trade_rl.agents import agent_from_env
 from trade_rl.data import Data
-from trade_rl.env import TradingEnvironment
+from trade_rl.env import Info, TradingEnvironment
 from trade_rl.util.args import Args
+from trade_rl.util.perf import PerfTracker
 from trade_rl.util.seed import seed_everything
 
 
@@ -13,11 +14,13 @@ def run(args: Args) -> None:
     for run_number in range(args.meta.num_runs):  # TODO: Concurrency
         args.meta.global_seed += run_number
         seed_everything(args.meta.global_seed)
-        train(train_data, args)
-        test(test_data, args)
+        tracker = PerfTracker(Info.get_fields(), args)
+        train(train_data, tracker, args)
+        test(test_data, tracker, args)
 
 
-def train(data: Data, args: Args) -> None:
+def train(data: Data, tracker: PerfTracker, args: Args) -> None:
+    tracker.train()
     env = TradingEnvironment(args, data)
     agent = agent_from_env(env, args.agent)
 
@@ -32,14 +35,15 @@ def train(data: Data, args: Args) -> None:
                 done = terminated or truncated
                 obs = next_obs
                 pbar.update(1)
-    agent.save_model(env.tracker.log_dir)
+            tracker(info)
+    agent.save_model(tracker.log_dir)
 
 
-def test(data: Data, args: Args) -> None:
-    # TODO: Ensure perf tracker is aware of the fact we are in eval mode
+def test(data: Data, tracker: PerfTracker, args: Args) -> None:
+    tracker.eval()
     env = TradingEnvironment(args, data)
     agent = agent_from_env(env, args.agent)
-    agent.load_model('TODO')
+    agent.load_model(tracker.log_dir)
 
     with tqdm(total=args.env.max_test_steps) as pbar:
         while env.info.global_step < args.env.max_test_steps:
@@ -51,3 +55,4 @@ def test(data: Data, args: Args) -> None:
                 done = terminated or truncated
                 obs = next_obs
                 pbar.update(1)
+            tracker(info)
