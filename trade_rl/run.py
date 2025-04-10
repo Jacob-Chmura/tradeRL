@@ -24,7 +24,10 @@ def train(data: Data, tracker: PerfTracker, args: Args) -> None:
     env = TradingEnvironment(args, data)
     agent = agent_from_env(env, args.agent)
 
-    with tqdm(total=env.max_train_steps) as pbar:
+    with tqdm(
+        total=env.max_train_steps,
+        bar_format='{desc}|{bar:20}| {n_fmt}/{total_fmt}, {rate_fmt}',
+    ) as pbar:
         while env.info.global_step < env.max_train_steps:
             obs, info = env.reset()
             done = False
@@ -35,6 +38,7 @@ def train(data: Data, tracker: PerfTracker, args: Args) -> None:
                 done = terminated or truncated
                 obs = next_obs
                 pbar.update(1)
+                pbar.set_description(tracker.pretty())
             tracker(info)
     agent.save_model(tracker.log_dir)
 
@@ -45,7 +49,10 @@ def test(data: Data, tracker: PerfTracker, args: Args) -> None:
     agent = agent_from_env(env, args.agent)
     agent.load_model(tracker.log_dir)
 
-    with tqdm(total=env.max_test_steps) as pbar:
+    with tqdm(
+        total=env.max_test_steps,
+        bar_format='{desc}|{bar:50}| {n_fmt}/{total_fmt}, {rate_fmt}',
+    ) as pbar:
         while env.info.global_step < env.max_test_steps:
             obs, info = env.reset()
             done = False
@@ -54,5 +61,6 @@ def test(data: Data, tracker: PerfTracker, args: Args) -> None:
                 next_obs, reward, terminated, truncated, info = env.step(action)
                 done = terminated or truncated
                 obs = next_obs
+                pbar.set_description(tracker.pretty())
                 pbar.update(1)
             tracker(info)
