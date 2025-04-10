@@ -79,7 +79,7 @@ class DQNAgent(TradingAgent):
 
     def load_model(self, path: str | pathlib.Path) -> None:
         path = pathlib.Path(path) / f'{self.__class__.__name__}_dqn.pt'
-        self.logger.info(f'Loading model fron: {path}')
+        self.logger.info(f'Loading model from: {path}')
         self.qnet.load_state_dict(torch.load(path, weights_only=True))
         self.qnet.eval()
         self.logger.info(f'Loaded model from: {path}')
