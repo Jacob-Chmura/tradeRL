@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import pathlib
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -21,3 +22,6 @@ class TradingAgent(ABC):
     def update(
         self, obs: Any, action: int, reward: float, terminated: bool, next_obs: Any
     ) -> None: ...
+
+    def save_model(self, path: str | pathlib.Path) -> None: ...
+    def load_model(self, path: str | pathlib.Path) -> None: ...

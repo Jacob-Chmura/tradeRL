@@ -116,7 +116,7 @@ class TradingEnvironment(gym.Env):
 
     @property
     def order_arrival(self) -> Dict[str, Any]:
-        return self.day_data.iloc[self.info.order_start_time].to_dict()
+        return self._get_market_data(self.info.order_start_time)
 
     @property
     def market_open(self) -> Dict[str, Any]:

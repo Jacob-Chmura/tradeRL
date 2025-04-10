@@ -10,12 +10,12 @@ from trade_rl.util.path import get_root_dir, get_run_id
 
 class PerfTracker:
     def __init__(self, fields: List[str], args: Args) -> None:
-        log_dir = get_root_dir() / 'runs' / get_run_id(args.meta.experiment_name)
-        log_dir.mkdir(parents=True, exist_ok=True)
-        with open(log_dir / 'config.json', 'w') as f:
+        self.log_dir = get_root_dir() / 'runs' / get_run_id(args.meta.experiment_name)
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+        with open(self.log_dir / 'config.json', 'w') as f:
             json.dump(asdict(args), f)
         fields += ['time']
-        self.fp = open(log_dir / 'results.csv', 'a+', encoding='utf8')
+        self.fp = open(self.log_dir / 'results.csv', 'a+', encoding='utf8')
         self.writer = csv.DictWriter(self.fp, fieldnames=fields, lineterminator='\n')
         self.writer.writeheader()
 

@@ -1,3 +1,4 @@
+import pathlib
 from collections import deque
 from typing import Any, Deque, List
 
@@ -57,6 +58,19 @@ class ReinforceAgent(TradingAgent):
 
             self._update_temperature()
             self.rewards, self.log_probs = [], []
+
+    def save_model(self, path: str | pathlib.Path) -> None:
+        path = pathlib.Path(path) / f'{self.__class__.__name__}_policy.pt'
+        self.logger.info(f'Saving model to: {path}')
+        torch.save(self.policy.state_dict(), path)
+        self.logger.info(f'Saved model to: {path}')
+
+    def load_model(self, path: str | pathlib.Path) -> None:
+        path = pathlib.Path(path) / f'{self.__class__.__name__}_policy.pt'
+        self.logger.info(f'Loading model fron: {path}')
+        self.policy.load_state_dict(torch.load(path, weights_only=True))
+        self.policy.eval()
+        self.logger.info(f'Loaded model from: {path}')
 
     def _get_loss(self) -> torch.Tensor:
         R = 0.0
