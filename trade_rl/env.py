@@ -1,5 +1,5 @@
 import logging
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass, fields
 from typing import Any, Dict, List, Optional, Tuple
 
 import gymnasium as gym
@@ -10,7 +10,6 @@ from trade_rl.data import Data
 from trade_rl.order import Order, OrderGenerator
 from trade_rl.reward_manager import RewardManager
 from trade_rl.util.args import Args
-from trade_rl.util.perf import PerfTracker
 
 
 @dataclass(slots=True)
@@ -68,9 +67,12 @@ class Info:
         self.total_reward += reward
 
     def to_dict(self) -> Dict[str, Any]:
-        d = asdict(self)
-        d.pop('portfolio')  # Don't serialized this
-        return d
+        return {field: getattr(self, field) for field in self.get_fields()}
+
+    @classmethod
+    def get_fields(cls) -> List[str]:
+        skip_fields = ['portfolio']  # Don't serialized this
+        return [v.name for v in fields(cls) if v.name not in skip_fields]
 
 
 class TradingEnvironment(gym.Env):
@@ -85,14 +87,12 @@ class TradingEnvironment(gym.Env):
 
         self.reward_manager = RewardManager(self, args.env.reward_args)
         self.order_generator = OrderGenerator(args.env.order_gen_args)
-        self.tracker = PerfTracker(list(self.info.to_dict().keys()), args)
         self.day_data = self._new_order()
 
     def reset(
         self, seed: Optional[int] = None, options: Optional[dict] = None
     ) -> Tuple[Any, ...]:
         super().reset(seed=seed)
-        self.tracker(self.info.to_dict())
         self.day_data = self._new_order()
         return self._get_obs(), self.info.to_dict()
 

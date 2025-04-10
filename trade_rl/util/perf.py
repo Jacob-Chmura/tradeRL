@@ -15,13 +15,28 @@ class PerfTracker:
         with open(self.log_dir / 'config.json', 'w') as f:
             json.dump(asdict(args), f)
         fields += ['time']
-        self.fp = open(self.log_dir / 'results.csv', 'a+', encoding='utf8')
-        self.writer = csv.DictWriter(self.fp, fieldnames=fields, lineterminator='\n')
-        self.writer.writeheader()
+
+        self.fps = {
+            'train': open(self.log_dir / 'train_results.csv', 'a+', encoding='utf8'),
+            'eval': open(self.log_dir / 'eval_results.csv', 'a+', encoding='utf8'),
+        }
+        self.writers = {}
+        for mode, fp in self.fps.items():
+            self.writers[mode] = csv.DictWriter(fp, fields, lineterminator='\n')
+            self.writers[mode].writeheader()
+
+        self.train()
 
     def __del__(self) -> None:
-        self.fp.close()
+        for fp in self.fps.values():
+            fp.close()
 
     def __call__(self, info: Dict[str, Any]) -> None:
         info['time'] = time.time_ns()
-        self.writer.writerow(info)
+        self.writers[self.mode].writerow(info)
+
+    def train(self) -> None:
+        self.mode = 'train'
+
+    def eval(self) -> None:
+        self.mode = 'eval'
