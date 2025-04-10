@@ -1,3 +1,4 @@
+import pathlib
 import random
 from collections import deque, namedtuple
 from typing import Any, Deque
@@ -69,6 +70,19 @@ class DQNAgent(TradingAgent):
         self.opt.zero_grad()
         loss.backward()
         self.opt.step()
+
+    def save_model(self, path: str | pathlib.Path) -> None:
+        path = pathlib.Path(path) / f'{self.__class__.__name__}_dqn.pt'
+        self.logger.info(f'Saving model to: {path}')
+        torch.save(self.qnet.state_dict(), path)
+        self.logger.info(f'Saved model to: {path}')
+
+    def load_model(self, path: str | pathlib.Path) -> None:
+        path = pathlib.Path(path) / f'{self.__class__.__name__}_dqn.pt'
+        self.logger.info(f'Loading model from: {path}')
+        self.qnet.load_state_dict(torch.load(path, weights_only=True))
+        self.qnet.eval()
+        self.logger.info(f'Loaded model from: {path}')
 
 
 class DQN(nn.Module):
