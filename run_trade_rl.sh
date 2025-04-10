@@ -7,13 +7,13 @@ print_usage() {
     echo "Run TradeRL with a specific configuration."
     echo
     echo "Positional argument:"
-    echo "  config_file            The path of the config file to use (default='config/default.yaml)."
+    echo "  config_file            The path of the config file to use (default='config/baselines/random.yaml)."
     echo
     echo "Optional arguments:"
     echo "  -h, --help             Show this help message and exit."
 }
 
-CONFIG_FILE="./config/default.yaml"
+CONFIG_FILE="./config/baselines/random.yaml"
 
 main() {
     parse_args "$@"

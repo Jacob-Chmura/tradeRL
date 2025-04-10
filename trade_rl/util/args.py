@@ -12,6 +12,7 @@ class MetaArgs:
     experiment_name: str
     log_file_path: Optional[str]
     global_seed: int
+    num_runs: int
 
     def __post_init__(self) -> None:
         if self.log_file_path is not None:

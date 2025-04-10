@@ -1,0 +1,37 @@
+---
+MetaArgs:
+  global_seed: 1337
+  log_file_path: trade_rl.log
+  num_runs: 5
+  experiment_name: random_agent
+EnvironmentArgs:
+  env_name: 'trade_rl/TradingEnvironment-v0'
+  max_train_steps: 100000
+  max_test_steps: 10000
+  order_gen_args:
+    sym_spec: ['TSLA']
+    qty_spec: [10, 50]
+    start_time_spec: [300, 1800, 9000, 18000] # 9:35, 10:00, 12:00, 2:30
+    duration_spec: [60, 600, 3600] # 1 minute, 10 minutes, 1 hour duration
+  feature_args:
+    train_data_path: 'data/TSLA/OCHLV/train.parquet' # TODO: Multi-symbol
+    test_data_path: 'data/TSLA/OCHLV/test.parquet' # TODO: Multi-symbol
+    short_window: 5
+    medium_window: 10
+    long_window: 30
+  reward_args:
+    reward_type: 'arrival_sparse' # arrival_sparse, arrival_dense, vwap_sparse, vwap_dense, oracle
+    termination_px_cost_multiplier: 1.5
+AgentArgs:
+  agent_type: 'random' # random, buy_below_arrival, buy_last, buy_start, buy_linear_schedule, dqn, reinforce
+  dqn_args:
+    lr: 0.0002
+    gamma: 0.99
+    batch_size: 128
+    buffer_size: 10000
+    eps: 0.5 # TODO: Linear Schedule
+  reinforce_args:
+    lr: 0.01
+    gamma: 0.99
+    batch_size: 1000
+    temp: 1 # TODO: Linear schedule
