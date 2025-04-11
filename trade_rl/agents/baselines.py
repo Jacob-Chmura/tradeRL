@@ -19,12 +19,6 @@ class BuyLastAgent(TradingAgent):
         return self.env.info.step >= start_to_buy_time
 
 
-class BuyLinearScheduleAgent(TradingAgent):
-    def get_action(self, obs: Any) -> int:
-        interval = self.env.info.order_duration // self.env.info.order_qty
-        return self.env.info.step % interval == 0
-
-
 class BuyBelowArrivalAgent(TradingAgent):
     def get_action(self, obs: Any) -> int:
         return self.env.current['open'] < self.env.market_open['open']
