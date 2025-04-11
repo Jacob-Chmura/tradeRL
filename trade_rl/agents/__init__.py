@@ -6,7 +6,6 @@ from trade_rl.agents.baselines import (
     BuyStartAgent,
     BuyLastAgent,
     BuyBelowArrivalAgent,
-    BuyLinearScheduleAgent,
     RandomAgent,
 )
 from trade_rl.util.args import AgentArgs
@@ -17,7 +16,6 @@ def agent_from_env(env: gym.Env, agent_args: AgentArgs) -> TradingAgent:
         'buy_below_arrival': BuyBelowArrivalAgent,
         'buy_last': BuyLastAgent,
         'buy_start': BuyStartAgent,
-        'buy_linear_schedule': BuyLinearScheduleAgent,
         'random': RandomAgent,
         'dqn': lambda env: DQNAgent(env, agent_args.dqn_args),
         'reinforce': lambda env: ReinforceAgent(env, agent_args.reinforce_args),
