@@ -52,7 +52,7 @@ class ReinforceAgent(TradingAgent):
         info: Dict[str, Any],
     ) -> None:
         self.temp = self.linear_schedule(
-            self.temp_start, self.temp_end, info['gloal_step']
+            self.temp_start, self.temp_end, info['global_step']
         )
         self.rewards.append(reward)
         if len(self.rewards) % self.batch_size == 0:
