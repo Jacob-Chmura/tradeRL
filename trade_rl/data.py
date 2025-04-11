@@ -4,6 +4,7 @@ from typing import Dict, Tuple
 
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 from trade_rl.util.args import FeatureArgs
 
@@ -15,9 +16,9 @@ class Data:
         else:
             data_path = feature_args.test_data_path
 
-        logging.debug(f'Reading raw data from: {data_path}')
+        logging.info(f'Reading raw data from: {data_path}')
         data = pd.read_parquet(data_path)
-        logging.debug(f'Read {data.memory_usage(deep=True).sum() / 1e9} GB')
+        logging.info(f'Read {data.memory_usage(deep=True).sum() / 1e9} GB')
 
         self.day_to_data = preprocess_data(data, feature_args)
         self.unique_days = list(self.day_to_data.keys())
@@ -83,7 +84,8 @@ def preprocess_data(
         return df
 
     day_to_data = {}  # TODO: Map symbol as well
-    for date, df in data.groupby('date'):
+    for date, df in (pbar := tqdm(data.groupby('date'))):
+        pbar.set_description(f'Preprocessing data for: {date}')
         df = fill_missing_data(df)
         df = compute_market_features(df)
         day_to_data[date] = df
