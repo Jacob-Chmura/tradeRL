@@ -8,7 +8,7 @@ from typing import Literal
 from trade_rl.util.args import OrderGenArgs
 
 
-@dataclass(slots=True, frozen=True)
+@dataclass(slots=True)
 class Order:
     order_id: str
     start_time: int
