@@ -20,7 +20,7 @@ EnvironmentArgs:
     medium_window: 10
     long_window: 30
   reward_args:
-    reward_type: 'vwap_sparse' # arrival_sparse, arrival_dense, vwap_sparse, vwap_dense, oracle
+    reward_type: 'vwap_sparse' # arrival_sparse, arrival_dense, vwap_sparse, vwap_dense
     termination_px_cost_multiplier: 1.5
 AgentArgs:
   agent_type: 'reinforce' # random, buy_below_arrival, buy_last, buy_start, dqn, reinforce

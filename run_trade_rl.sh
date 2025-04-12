@@ -34,10 +34,6 @@ main() {
     CONFIG_FILE="./config/reinforce/reinforce_vwap_dense.yaml"
     echo "Running TradeRL with config: ${CONFIG_FILE}..."
     uv run trade_rl/main.py --config-file "${CONFIG_FILE}"
-
-    CONFIG_FILE="./config/reinforce/reinforce_oracle.yaml"
-    echo "Running TradeRL with config: ${CONFIG_FILE}..."
-    uv run trade_rl/main.py --config-file "${CONFIG_FILE}"
 }
 
 parse_args() {
