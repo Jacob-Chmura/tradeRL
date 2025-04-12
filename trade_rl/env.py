@@ -100,12 +100,23 @@ class TradingEnvironment(gym.Env):
 
     def step(self, action: int) -> Tuple[Any, ...]:
         self.info.new_step(action, self.current)
-        done = self.info.step >= self.info.order_duration or self.info.qty_left == 0
+        done = self.info.step > self.info.order_duration or self.info.qty_left == 0
         truncated = False
         slippages, reward = self.reward_manager(done)
         self.info.update_perf(slippages, reward)
-        obs, info = self._get_obs(), self.info.to_dict()
+
+        info = self.info.to_dict()
         logging.debug(info)
+
+        try:
+            obs = self._get_obs()
+        except Exception as e:
+            logging.exception(f'Cancelling order, reason: {e}')
+            # TODO: Cancel order
+            obs = np.zeros(self.OBS_DIM)
+            done = True
+            info['cancelled'] = True
+
         return obs, reward, done, truncated, info
 
     @property
