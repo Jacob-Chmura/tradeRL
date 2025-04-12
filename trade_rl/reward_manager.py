@@ -9,7 +9,6 @@ class RewardManager:
         'arrival_dense',
         'vwap_sparse',
         'vwap_dense',
-        'oracle',
     ]
 
     def __init__(self, env: 'TradingEnvironment', reward_args: RewardArgs) -> None:  # type: ignore
