@@ -134,8 +134,16 @@ class TradingEnvironment(gym.Env):
     def _new_order(self) -> pd.DataFrame:
         order = self.order_generator()
         logging.debug(f'New order: {order}')
-        self.info.new_episode(order)
+
         self.info.order_date, day_data = self.data.get_random_day_of_data()
+        if order.start_time + self.info.step >= len(day_data):
+            logging.warning(
+                f'Order End Time: {order.start_time} + {self.info.step} exceeds '
+                f'market data duration: {len(day_data)} for day: {self.info.order_date} '
+                'Clipping order duration to fit within market day'
+            )
+            order.duration = len(day_data) - order.start_time - 1
+        self.info.new_episode(order)
         return day_data
 
     def _get_obs(self) -> np.ndarray:
