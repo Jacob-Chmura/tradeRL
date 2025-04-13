@@ -6,8 +6,8 @@ MetaArgs:
   experiment_name: reinforce_agent
 EnvironmentArgs:
   env_name: 'trade_rl/TradingEnvironment-v0'
-  max_train_steps: 100000
-  max_test_steps: 10000
+  max_train_steps: 1000000
+  max_test_steps: 100000
   order_gen_args:
     sym_spec: ['TSLA']
     qty_spec: [0.1, 0.01] # Percentage of Order Duration
