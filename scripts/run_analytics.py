@@ -40,34 +40,14 @@ def main() -> None:
     train, test = preprocess_results(df)
 
     plot_learning_curves(train, artifacts_dir)
-    plot_test_performance_by(
-        test, artifacts_dir, by='order_duration', label='Order Duration (s)'
-    )
-    plot_test_performance_by(
-        test, artifacts_dir, by='order_start_time', label='Order Time'
-    )
-    latex_tables = generate_perf_summary(test)
-    save_latex_tables(latex_tables, artifacts_dir)
+    plot_test_performance_table(test, artifacts_dir)
 
-
-def generate_perf_summary(test: pd.DataFrame) -> Dict[str, str]:
-    perf_cols = [
-        'reward_per_step',
-        'arrival_slippage',
-        'vwap_slippage',
-        'oracle_slippage',
+    test_performance_specs = [
+        {'by': 'order_duration', 'label': 'Order Duration (s)'},
+        {'by': 'order_start_time', 'label': 'Order Time'},
     ]
-    perf = test.groupby(['agent', 'reward_type'])[perf_cols].mean().reset_index()
-    headers = [
-        'Agent',
-        'Reward Type',
-        'Reward',
-        'Arrival (bps)',
-        'VWAP (bps)',
-        'Oracle (bps)',
-    ]
-    print(tabulate(perf, headers=headers, tablefmt='fancy_grid'))
-    return {'performance': tabulate(perf, headers=headers, tablefmt='latex')}
+    for test_spec in test_performance_specs:
+        plot_test_performance_by(test, artifacts_dir, **test_spec)
 
 
 def plot_learning_curves(
@@ -83,20 +63,12 @@ def plot_learning_curves(
     df['time_left'] = smooth_series(df['time_left'])
 
     f, ax = plt.subplots(2, 3, figsize=(12, 6))
-    sns.lineplot(
-        data=df, x='episode', hue='reward_type', ax=ax[0][0], y='arrival_slippage'
-    )
-    sns.lineplot(
-        data=df, x='episode', hue='reward_type', ax=ax[0][1], y='vwap_slippage'
-    )
-    sns.lineplot(
-        data=df, x='episode', hue='reward_type', ax=ax[0][2], y='oracle_slippage'
-    )
-    sns.lineplot(
-        data=df, x='episode', hue='reward_type', ax=ax[1][0], y='reward_per_step'
-    )
-    sns.lineplot(data=df, x='episode', hue='reward_type', ax=ax[1][1], y='urgency')
-    sns.lineplot(data=df, x='episode', hue='reward_type', ax=ax[1][2], y='time_left')
+    sns.lineplot(df, x='episode', hue='reward_type', ax=ax[0][0], y='arrival_slippage')
+    sns.lineplot(df, x='episode', hue='reward_type', ax=ax[0][1], y='vwap_slippage')
+    sns.lineplot(df, x='episode', hue='reward_type', ax=ax[0][2], y='oracle_slippage')
+    sns.lineplot(df, x='episode', hue='reward_type', ax=ax[1][0], y='reward_per_step')
+    sns.lineplot(df, x='episode', hue='reward_type', ax=ax[1][1], y='urgency')
+    sns.lineplot(df, x='episode', hue='reward_type', ax=ax[1][2], y='time_left')
 
     titles = [
         'Arrival Slippage',
@@ -132,6 +104,39 @@ def plot_learning_curves(
     print(f'Learning curves saved to: {save_path}')
 
 
+def plot_test_performance_table(
+    test: pd.DataFrame, artifacts_dir: pathlib.Path
+) -> None:
+    perf_cols = [
+        'reward_per_step',
+        'arrival_slippage',
+        'vwap_slippage',
+        'oracle_slippage',
+    ]
+    groups = ['agent', 'reward_type']
+    perf_mu = test.groupby(groups)[perf_cols].mean().reset_index()
+    perf_std = test.groupby(groups)[perf_cols].std().reset_index()
+    perf = perf_mu[groups].copy()
+    for perf_col in perf_cols:
+        mu = perf_mu[perf_col].round(3).astype(str)
+        std = perf_std[perf_col].round(3).astype(str)
+        perf[perf_col] = mu.str.cat(std, sep=' ± ')
+
+    headers = [
+        'Agent',
+        'Reward Type',
+        'Reward',
+        'Arrival (bps)',
+        'VWAP (bps)',
+        'Oracle (bps)',
+    ]
+    print(tabulate(perf, headers=headers, tablefmt='fancy_grid'))
+    save_latex_tables(
+        {'performance': tabulate(perf, headers=headers, tablefmt='latex')},
+        artifacts_dir,
+    )
+
+
 def plot_test_performance_by(
     df: pd.DataFrame, artifacts_dir: pathlib.Path, by: str, label: str
 ) -> None:
@@ -164,16 +169,6 @@ def plot_test_performance_by(
     plt.savefig(save_path, dpi=200, bbox_inches='tight')
     plt.close()
     print(f'Test Performance by {by} saved to: {save_path}')
-
-
-def save_latex_tables(
-    latex_tables: Dict[str, str], artifacts_dir: pathlib.Path
-) -> None:
-    for table_name, table_latex in latex_tables.items():
-        save_path = artifacts_dir / f'{table_name}.txt'
-        with open(save_path, 'w') as f:
-            f.write(table_latex)
-        print(f'Performance Table saved to: {save_path}')
 
 
 def preprocess_results(df: pd.DataFrame) -> Tuple[pd.DataFrame, ...]:
@@ -250,6 +245,16 @@ def parse_results_dir(results_dir: pathlib.Path) -> pd.DataFrame:
         dfs.append(results)
     df = pd.concat(dfs)
     return df
+
+
+def save_latex_tables(
+    latex_tables: Dict[str, str], artifacts_dir: pathlib.Path
+) -> None:
+    for table_name, table_latex in latex_tables.items():
+        save_path = artifacts_dir / f'{table_name}.txt'
+        with open(save_path, 'w') as f:
+            f.write(table_latex)
+        print(f'Performance Table saved to: {save_path}')
 
 
 if __name__ == '__main__':
