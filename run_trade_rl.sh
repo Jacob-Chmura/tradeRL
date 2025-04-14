@@ -19,19 +19,6 @@ main() {
     parse_args "$@"
     check_uv_install
 
-    CONFIG_FILE="./config/reinforce/reinforce.yaml"
-    echo "Running TradeRL with config: ${CONFIG_FILE}..."
-    uv run trade_rl/main.py --config-file "${CONFIG_FILE}"
-
-    CONFIG_FILE="./config/reinforce/reinforce_arrival_dense.yaml"
-    echo "Running TradeRL with config: ${CONFIG_FILE}..."
-    uv run trade_rl/main.py --config-file "${CONFIG_FILE}"
-
-    CONFIG_FILE="./config/reinforce/reinforce_vwap.yaml"
-    echo "Running TradeRL with config: ${CONFIG_FILE}..."
-    uv run trade_rl/main.py --config-file "${CONFIG_FILE}"
-
-    CONFIG_FILE="./config/reinforce/reinforce_vwap_dense.yaml"
     echo "Running TradeRL with config: ${CONFIG_FILE}..."
     uv run trade_rl/main.py --config-file "${CONFIG_FILE}"
 }

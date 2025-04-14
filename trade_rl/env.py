@@ -115,7 +115,6 @@ class TradingEnvironment(gym.Env):
             # TODO: Cancel order
             obs = np.zeros(self.OBS_DIM)
             done = True
-            info['cancelled'] = True
 
         return obs, reward, done, truncated, info
 
