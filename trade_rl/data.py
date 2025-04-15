@@ -38,10 +38,11 @@ def preprocess_data(
 
     def fill_missing_data(df: pd.DataFrame) -> pd.DataFrame:
         df = df.set_index('market_second')
-        df = df.reindex(pd.RangeIndex(23400))
+        df = df.reindex(pd.RangeIndex(23401))
         df[ochl_cols] = df[ochl_cols].ffill()
+        df[ochl_cols] = df[ochl_cols].bfill()  # Note: Information leakage
         df['volume'] = df['volume'].fillna(0)
-        df = df[ochl_cols + ['volume']].reset_index(names=['market_second']).dropna()
+        df = df[ochl_cols + ['volume']].reset_index(names=['market_second'])
         return df
 
     def compute_market_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -81,6 +82,7 @@ def preprocess_data(
 
         # VWAP (Volume Weighted Average Price)
         df['vwap'] = (df['volume'] * df['open']).cumsum() / df['volume'].cumsum()
+        df['vwap'] = df['vwap'].fillna(df['open'])
         return df
 
     day_to_data = {}  # TODO: Map symbol as well

@@ -146,13 +146,14 @@ class TradingEnvironment(gym.Env):
         logging.debug(f'New order: {order}')
 
         self.info.order_date, day_data = self.data.get_random_day_of_data()
-        if order.start_time + self.info.step >= len(day_data):
+        if order.start_time + self.info.step >= (last := day_data.market_second.max()):
             logging.warning(
                 f'Order End Time: {order.start_time} + {self.info.step} exceeds '
-                f'market data duration: {len(day_data)} for day: {self.info.order_date} '
+                f'market data duration: {last} for day: {self.info.order_date} '
                 'Clipping order duration to fit within market day'
             )
-            order.duration = len(day_data) - order.start_time - 1
+            order.duration = last - order.start_time - 1
+            logging.warning(f'New order duration: {order.duration}')
         self.info.new_episode(order)
         return day_data
 
@@ -193,4 +194,4 @@ class TradingEnvironment(gym.Env):
         return obs
 
     def _get_market_data(self, i: int) -> Dict[str, Any]:
-        return self.day_data.iloc[i].to_dict()
+        return self.day_data.loc[i].to_dict()

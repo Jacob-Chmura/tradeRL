@@ -51,7 +51,7 @@ def main() -> None:
 
 
 def plot_learning_curves(
-    df_: pd.DataFrame, artifacts_dir: pathlib.Path, roll: int = 100
+    df_: pd.DataFrame, artifacts_dir: pathlib.Path, roll: int = 1000
 ) -> None:
     df = df_.copy()
     smooth_series = lambda x: x.rolling(roll).mean().fillna(0)
