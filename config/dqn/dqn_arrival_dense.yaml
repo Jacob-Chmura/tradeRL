@@ -3,11 +3,11 @@ MetaArgs:
   global_seed: 1337
   num_runs: 5
   log_file_path: trade_rl.log
-  experiment_name: dqn_agent
+  experiment_name: dqn_agent_arrival_dense
 EnvironmentArgs:
   env_name: 'trade_rl/TradingEnvironment-v0'
-  max_train_steps: 100000
-  max_test_steps: 10000
+  max_train_steps: 1000000
+  max_test_steps: 100000
   order_gen_args:
     sym_spec: ['TSLA']
     qty_spec: [0.1, 0.01] # Percentage of Order Duration
@@ -20,8 +20,8 @@ EnvironmentArgs:
     medium_window: 10
     long_window: 30
   reward_args:
-    reward_type: 'arrival_sparse' # arrival_sparse, arrival_dense, vwap_sparse, vwap_dense
-    termination_px_cost_multiplier: 1.5
+    reward_type: 'arrival_dense' # arrival_sparse, arrival_dense, vwap_sparse, vwap_dense
+    termination_px_cost_multiplier: 10
 AgentArgs:
   agent_type: 'dqn' # random, buy_below_arrival, buy_last, buy_start, dqn, reinforce
   dqn_args:

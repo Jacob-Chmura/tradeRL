@@ -1,0 +1,7 @@
+\begin{tabular}{rllllll}
+\hline
+    & Agent   & Reward Type   & Reward          & Arrival (bps)   & VWAP (bps)     & Oracle (bps)   \\
+\hline
+  0 & dqn     & vwap\_dense    & -0.816 ± 32.651 & -0.923 ± 21.839 & 0.563 ± 31.973 & 61.21 ± 106.32 \\
+\hline
+\end{tabular}
