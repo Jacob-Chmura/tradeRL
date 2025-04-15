@@ -82,6 +82,7 @@ def preprocess_data(
 
         # VWAP (Volume Weighted Average Price)
         df['vwap'] = (df['volume'] * df['open']).cumsum() / df['volume'].cumsum()
+        df['vwap'] = df['vwap'].fillna(df['open'])
         return df
 
     day_to_data = {}  # TODO: Map symbol as well
