@@ -1,0 +1,10 @@
+\begin{tabular}{rllllll}
+\hline
+    & Agent     & Reward Type    & Reward          & Arrival (bps)   & VWAP (bps)      & Oracle (bps)     \\
+\hline
+  0 & reinforce & arrival\_dense  & -0.713 ± 19.105 & 0.998 ± 24.136  & -2.603 ± 51.931 & 60.137 ± 112.746 \\
+  1 & reinforce & arrival\_sparse & 0.0 ± 0.0       & -0.571 ± 19.592 & 2.239 ± 47.437  & 58.621 ± 113.479 \\
+  2 & reinforce & vwap\_dense     & 1.603 ± 46.336  & 0.446 ± 16.161  & -1.452 ± 45.743 & 55.798 ± 107.788 \\
+  3 & reinforce & vwap\_sparse    & 0.0 ± 0.0       & -0.571 ± 19.592 & 2.239 ± 47.437  & 58.621 ± 113.479 \\
+\hline
+\end{tabular}
