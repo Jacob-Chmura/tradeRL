@@ -30,6 +30,7 @@ class Info:
 
     # Performance Info
     portfolio: Optional[List[Tuple[float, int]]] = None
+    take_actions: Optional[List[int]] = None
     total_reward: float = 0
     agent_vwap: float = 0
     arrival_slippage: float = 0
@@ -46,6 +47,7 @@ class Info:
         self.order_symbol = order.sym
         self.qty_left = order.qty
         self.portfolio = []
+        self.take_actions = []
         self.total_reward = 0
         self.agent_vwap = 0
         self.arrival_slippage = 0
@@ -56,6 +58,7 @@ class Info:
         if action:
             self.qty_left -= 1
             self.portfolio.append((current['close'], self.step))  # type: ignore
+            self.take_actions.append(self.step)  # type: ignore
             self.agent_vwap = np.mean([x[0] for x in self.portfolio])  # type: ignore
         self.global_step += 1
         self.step += 1
@@ -106,7 +109,9 @@ class TradingEnvironment(gym.Env):
         self.info.update_perf(slippages, reward)
 
         info = self.info.to_dict()
-        logging.debug(info)
+        log_info = info.copy()
+        log_info.pop('take_actions')
+        logging.debug(log_info)
 
         try:
             obs = self._get_obs()
