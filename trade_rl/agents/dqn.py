@@ -78,6 +78,9 @@ class DQNAgent(TradingAgent):
         self.qnet.eval()
         self.logger.info(f'Loaded model from: {path}')
 
+        self.eps = 0
+        self.logger.info(f'Agent Exploration eps = {self.eps}')
+
     def _get_loss(self) -> torch.Tensor:
         transitions = self.memory.sample(self.batch_size)
         batch = Transition(*zip(*transitions))

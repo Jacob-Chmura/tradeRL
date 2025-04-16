@@ -75,6 +75,9 @@ class ReinforceAgent(TradingAgent):
         self.policy.eval()
         self.logger.info(f'Loaded model from: {path}')
 
+        self.temp = 0.001
+        self.logger.info(f'Agent Exploration temp = {self.temp}')
+
     def _get_loss(self) -> torch.Tensor:
         R = 0.0
         policy_loss = []
