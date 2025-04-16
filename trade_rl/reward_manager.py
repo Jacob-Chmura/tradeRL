@@ -21,10 +21,10 @@ class RewardManager:
         self.slippage_type = reward_type.split('_')[0]  # arrival_sparse -> arrival
         self.terminal_cost_multiplier = reward_args.termination_px_cost_multiplier
         self.benchmarks = {
-            'arrival': lambda: self._slippage_bps(self.env.order_arrival['open']),
-            'vwap': lambda: self._slippage_bps(self.env.previous['vwap']),
+            'arrival': lambda: self._slippage_bps(self.env.order_arrival['close']),
+            'vwap': lambda: self._slippage_bps(self.env.previous['vwap_close']),
             'oracle': lambda: self._slippage_bps(
-                self.env.order_duration_market['open']
+                self.env.order_duration_market['close']
                 .nsmallest(self.env.info.step)
                 .mean(),
             ),
