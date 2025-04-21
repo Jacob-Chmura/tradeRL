@@ -3,7 +3,7 @@
 <div align="center">
 <h1 style="font-size:3vw;padding:0;margin:0;display:inline">TradeRL</h3>
 <h3 style="margin:0">Algorithmic Trading with Reinforcement Learning</h3>
-<a href="https://arxiv.org/abs/2503.12667"><strong>Read the paper»</strong></a>
+<a href="http://github.com/Jacob-Chmura/tradeRL"><strong>Read the paper»</strong></a>
 </div>
 
 <br />
@@ -96,7 +96,7 @@ _All Analytics_
 
 _Non-result Dependent Analytics_
 
-Check the example notebooks for data and feature statistics.
+Check the [example notebooks](notebooks) for data and feature statistics.
 
 ## License
 
