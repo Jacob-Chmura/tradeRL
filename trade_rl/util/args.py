@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 import yaml  # type: ignore
+import json
 
 from trade_rl.util.path import get_root_dir
 
@@ -100,4 +101,13 @@ def parse_args(config_yaml: str | pathlib.Path) -> Args:
         meta=MetaArgs(**config['MetaArgs']),
         env=EnvironmentArgs(**config['EnvironmentArgs']),
         agent=AgentArgs(**config['AgentArgs']),
+    )
+
+def parse_json(config_file: str | pathlib.Path) -> Args:
+
+    config = json.loads(pathlib.Path(config_file).read_text())
+    return Args(
+        meta=MetaArgs(**config['meta']),
+        env=EnvironmentArgs(**config['env']),
+        agent=AgentArgs(**config['agent']),
     )

@@ -12,7 +12,7 @@ EnvironmentArgs:
     sym_spec: ['SPY']
     qty_spec: [0.1, 0.01] # Percentage of Order Duration
     start_time_spec: [1800, 7200, 12600] # 10:00, 11:30, 1:00
-    duration_spec: [600, 3600, 10000] # 10 minutes, 1 hour, ~3 hours
+    duration_spec: [3600,] # 10 minutes, 1 hour, ~3 hours
   feature_args:
     train_data_path: 'data/SPY/OCHLV/train.parquet' # TODO: Multi-symbol
     test_data_path: 'data/SPY/OCHLV/test.parquet' # TODO: Multi-symbol
@@ -37,3 +37,6 @@ AgentArgs:
     batch_size: 1000
     temp_start: 1.0
     temp_end: 0.05
+weights:
+  path_dqn: runs/dqn/SPY/2025-04-16_07-30-12_4c89a43
+  path_reinforce: runs/reinforce/reinforce_agent_spy_v2/2025-04-16_08-57-54_851be1a

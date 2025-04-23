@@ -38,12 +38,6 @@ class RewardManager:
         if order_done and self.env.info.qty_left > 0:
             finish_px = self.terminal_cost_multiplier * self.env.current['high']
             cost += finish_px - self.env.order_arrival['open']
-        # print(self.env.info.agent_vwap)
-        # print(slippages)
-        # print(self.env.order_duration_market['close']
-        #         .nsmallest(self.env.info.order_qty)
-        #         .mean())
-        # # input()
         return slippages, -cost
 
     def _slippage_bps(self, benchmark_px: float) -> float:

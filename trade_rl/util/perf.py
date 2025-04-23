@@ -10,10 +10,14 @@ from trade_rl.util.path import get_root_dir, get_run_id
 
 class PerfTracker:
     BAR_FORMAT = '{desc}|{bar:20}| {n_fmt}/{total_fmt}, {rate_fmt}'
-
-    def __init__(self, fields: List[str], args: Args) -> None:
-        self.log_dir = get_root_dir() / 'runs' / get_run_id(args.meta.experiment_name)
-        self.log_dir.mkdir(parents=True, exist_ok=True)
+    
+    # TODO: Fix duplicate heading when rerunning past config for eval
+    def __init__(self, fields: List[str], args: Args, rerun=None) -> None:
+        if rerun:
+            self.log_dir = get_root_dir() / rerun
+        else:
+            self.log_dir = get_root_dir() / 'runs' / get_run_id(args.meta.experiment_name)
+            self.log_dir.mkdir(parents=True, exist_ok=True)
         with open(self.log_dir / 'config.json', 'w') as f:
             json.dump(asdict(args), f)
         fields += ['time']

@@ -1,7 +1,9 @@
+import yaml
 import argparse
-import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from matplotlib import gridspec
 
 from dataclasses import asdict
 from trade_rl.data import Data
@@ -13,7 +15,7 @@ from trade_rl.util.args import AgentArgs
 from trade_rl.util.multi_agent import MultiAgentTradingEnv
 
 
-def collect_episode(args, data, agents):
+def collect_episode(args, data, agents, weights):
 
     num_agents = len(agents)
     agent_args_list = [
@@ -25,7 +27,15 @@ def collect_episode(args, data, agents):
         for agent_type in agents
     ]
     env = MultiAgentTradingEnv(args, data, num_agents=num_agents)
-    agents = [agent_from_env(e, agent_args_list[i]) for i, e in enumerate(env.envs)]
+    loaded_agents = []
+    for i, e in enumerate(env.envs):
+        agent = agent_from_env(e, agent_args_list[i])
+        if agents[i] == 'dqn':
+            agent.load_model(weights['path_dqn'])
+        elif agents[i] == 'reinforce':
+            agent.load_model(weights['path_reinforce'])
+        loaded_agents.append(agent)
+
     obs, _ = env.reset()
     df = env.envs[0].day_data
     done = [False] * num_agents
@@ -36,23 +46,27 @@ def collect_episode(args, data, agents):
             'oracle_slips': [],
             'vwap_slips': [],
             'qtys_left': [],
+            'portfolio_avg': [0]*600
         }
         for _ in range(num_agents)
     ]
 
     t = 0
     while not all(done):
-        actions = [agent.get_action(obs_i) for agent, obs_i in zip(agents, obs)]
+        actions = [agent.get_action(obs_i) for agent, obs_i in zip(loaded_agents, obs)]
         obs, _, done, _, infos = env.step(actions)
         for i, info in enumerate(infos):
             stats[i]['step'].append(t)
             stats[i]['oracle_slips'].append(info['oracle_slippage'])
             stats[i]['vwap_slips'].append(info['vwap_slippage'])
             stats[i]['qtys_left'].append(info['qty_left'])
+            stats[i]['portfolio_avg'].append(
+                np.mean([v[0] for v in info['portfolio']])
+                if info['portfolio']
+                else 0
+            )
         t += 1
-
     final_infos = [e.info for e in env.envs]
-    print(final_infos)
     return df, final_infos, stats
 
 def animate_trading(day_data, infos, agents, stats, interval=1):
@@ -75,8 +89,12 @@ def animate_trading(day_data, infos, agents, stats, interval=1):
 
     day_data = day_data[day_data['market_second'].between(start_plot, end_plot)].reset_index(drop=True)
 
-    fig, ax = plt.subplots(figsize=(14, 7))
-    fig.subplots_adjust(right=0.6, bottom=0.3)
+    gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1], wspace=0.75)
+    fig = plt.figure(figsize=(14, 7))
+    ax  = fig.add_subplot(gs[0])
+    bar_ax = fig.add_subplot(gs[1])
+    fig.subplots_adjust(wspace=0.25, right=0.9, bottom=0.3)
+    
     ax.axvline(x=start_plot+window_pad, linestyle=':', color='gray', linewidth=1, label='Order start/end', zorder=0)
     ax.axvline(x=end_plot-window_pad,   linestyle=':', color='gray', linewidth=1,   zorder=0)
     line, = ax.plot([], [], lw=2, label='Close Price', zorder=1)
@@ -126,13 +144,29 @@ def animate_trading(day_data, infos, agents, stats, interval=1):
         frameon=False,
     )
 
+    x_pos = np.arange(len(infos))
+    bars  = bar_ax.bar(x_pos, [0]*len(infos), tick_label=agents, alpha=0.7)
+    bar_ax.set_title("Avg. Buy Price")
+
+    flat_avgs = []
+    for i in range(len(infos)):
+        flat_avgs +=  stats[i]['portfolio_avg']
+
+    global_max = max(flat_avgs) + 0.05
+    non_zero = [v for v in flat_avgs if v != 0]
+    second_min = min(non_zero) - 0.05
+    bar_ax.set_ylim(second_min, global_max)
+
     def init():
         line.set_data([], [])
         for marker_line in markers:
             marker_line.set_data([], [])
         for txt in name_texts + qleft_texts + oracle_texts + vwap_texts:
             txt.set_text("")
-        return [line] + markers + name_texts + qleft_texts + oracle_texts + vwap_texts
+        for bar in bars:
+            bar.set_height(0)
+        return [line] + markers + list(bars) + \
+               name_texts + qleft_texts + oracle_texts + vwap_texts
 
     def update(frame):
         x = day_data['market_second'].iloc[:frame]
@@ -159,7 +193,12 @@ def animate_trading(day_data, infos, agents, stats, interval=1):
             vwap_texts[i].set_text(f"VWAP Slip = {vs:.1f}bps")
             vwap_texts[i].set_color('green' if vs < 0 else 'red')
 
-        return [line] + markers + name_texts + qleft_texts + oracle_texts + vwap_texts
+        for i, bar in enumerate(bars):
+            idx = min(frame, len(stats[i]['portfolio_avg']) - 1)
+            bar.set_height(stats[i]['portfolio_avg'][idx])
+
+        return [line] + markers + list(bars) + \
+               name_texts + qleft_texts + oracle_texts + vwap_texts
             
     ani = animation.FuncAnimation(
         fig,
@@ -171,10 +210,10 @@ def animate_trading(day_data, infos, agents, stats, interval=1):
     )
     return fig, ani
    
-def main(args, agents):
+def main(args, agents, weights):
 
     data = Data(args.env.feature_args, train=False)
-    day_data, infos, stats = collect_episode(args, data, agents)
+    day_data, infos, stats = collect_episode(args, data, agents, weights)
     fig, ani = animate_trading(day_data, infos, agents, stats, interval=1)
     plt.show()
 
@@ -195,5 +234,8 @@ if __name__ == '__main__':
     config_file_path = get_root_dir() / args_.config_file
     args = parse_args(config_file_path)
     setup_basic_logging(args.meta.log_file_path)
-    print(args_.agents)
-    main(args, args_.agents)
+    # Custom config file for visualize including paths for extra 'weights' field
+    with open(args_.config_file, "r") as f:
+        config = yaml.safe_load(f)
+    
+    main(args, args_.agents, config['weights'])
