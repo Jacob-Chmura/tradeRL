@@ -13,15 +13,16 @@ class PerfTracker:
 
     # TODO: Fix duplicate heading when rerunning past config for eval
     def __init__(
-        self, fields: List[str], args: Args, rerun: Optional[str] = None
+        self, fields: List[str], args: Args, run_id: Optional[str] = None
     ) -> None:
-        if rerun:
-            self.log_dir = get_root_dir() / rerun
-        else:
+        if run_id is None:
             self.log_dir = (
                 get_root_dir() / 'runs' / get_run_id(args.meta.experiment_name)
             )
             self.log_dir.mkdir(parents=True, exist_ok=True)
+        else:
+            self.log_dir = get_root_dir() / run_id
+
         with open(self.log_dir / 'config.json', 'w') as f:
             json.dump(asdict(args), f)
         fields += ['time']

@@ -20,7 +20,7 @@ def run(args, config_path):
     )
     test_data = Data(args.env.feature_args, train=False)
     seed_everything(args.meta.global_seed)
-    tracker = PerfTracker(Info.get_fields(), args, rerun=config_path.parent)
+    tracker = PerfTracker(Info.get_fields(), args, run_id=config_path.parent)
     test(test_data, tracker, args)
 
 
