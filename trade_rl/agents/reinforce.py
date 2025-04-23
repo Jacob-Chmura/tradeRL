@@ -71,7 +71,9 @@ class ReinforceAgent(TradingAgent):
     def load_model(self, path: str | pathlib.Path) -> None:
         path = pathlib.Path(path) / f'{self.__class__.__name__}_policy.pt'
         self.logger.info(f'Loading model from: {path}')
-        self.policy.load_state_dict(torch.load(path, weights_only=True, map_location=torch.device('cpu')))
+        self.policy.load_state_dict(
+            torch.load(path, weights_only=True, map_location=torch.device('cpu'))
+        )
         self.policy.eval()
         self.logger.info(f'Loaded model from: {path}')
 

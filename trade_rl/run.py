@@ -45,7 +45,7 @@ def test(data: Data, tracker: PerfTracker, args: Args) -> None:
     env = TradingEnvironment(args, data)
     agent = agent_from_env(env, args.agent)
     agent.load_model(tracker.log_dir)
-    print(f"Loaded weights from: {tracker.log_dir}")
+    print(f'Loaded weights from: {tracker.log_dir}')
 
     with tqdm(total=env.max_test_steps, bar_format=PerfTracker.BAR_FORMAT) as pbar:
         while env.info.global_step < env.max_test_steps:

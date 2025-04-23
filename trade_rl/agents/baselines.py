@@ -1,14 +1,14 @@
-from typing import Any
 import random
+from typing import Any
 
 from trade_rl.agents.base import TradingAgent
 
 
 class RandomAgent(TradingAgent):
-
     def get_action(self, obs: Any) -> int:
-        buy_prob =  self.env.info.order_qty / self.env.info.order_duration
+        buy_prob = self.env.info.order_qty / self.env.info.order_duration
         return random.random() < buy_prob * 1.1
+
 
 class BuyStartAgent(TradingAgent):
     def get_action(self, obs: Any) -> int:

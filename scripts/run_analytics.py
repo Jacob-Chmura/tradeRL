@@ -5,11 +5,19 @@ from typing import Any, Dict, Tuple
 
 # TODO: Remove once eval.py duplicate heading patch is shipped
 NUMERIC_COLS = [
-    "global_step", "episode", "step",
-    "order_start_time", "order_duration", "order_qty",
-    "qty_left", "total_reward",
-    "agent_vwap", "arrival_slippage", "vwap_slippage",
-    "oracle_slippage", "time",
+    'global_step',
+    'episode',
+    'step',
+    'order_start_time',
+    'order_duration',
+    'order_qty',
+    'qty_left',
+    'total_reward',
+    'agent_vwap',
+    'arrival_slippage',
+    'vwap_slippage',
+    'oracle_slippage',
+    'time',
 ]
 
 import matplotlib.pyplot as plt
@@ -243,7 +251,7 @@ def parse_results_dir(results_dir: pathlib.Path) -> pd.DataFrame:
 
         # TODO: Remove once eval.py duplicate heading patch is shipped
         # keep rows whose first column is NOT the string "global_step"
-        results = results[results["global_step"] != "global_step"]
+        results = results[results['global_step'] != 'global_step']
         # restore numeric dtypes
         existing = [c for c in NUMERIC_COLS if c in results.columns]
         results[existing] = results[existing].apply(pd.to_numeric)
