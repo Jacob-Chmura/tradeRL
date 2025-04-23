@@ -25,7 +25,7 @@ class RewardManager:
             'vwap': lambda: self._slippage_bps(self.env.previous['vwap_close']),
             'oracle': lambda: self._slippage_bps(
                 self.env.order_duration_market['close']
-                .nsmallest(self.env.info.step)
+                .nsmallest(self.env.info.order_qty)
                 .mean(),
             ),
         }

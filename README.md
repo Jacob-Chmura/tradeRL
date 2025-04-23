@@ -69,7 +69,7 @@ _Full End-to-End Experiments_
 _Baseline Experiments Only_
 
 ```sh
-./run_trade_rl.sh config/baselines
+./run_trade_rl.sh config/baselines/random.yaml
 ```
 
 _DQN_

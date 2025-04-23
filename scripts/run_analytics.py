@@ -3,6 +3,23 @@ import json
 import pathlib
 from typing import Any, Dict, Tuple
 
+# TODO: Remove once eval.py duplicate heading patch is shipped
+NUMERIC_COLS = [
+    'global_step',
+    'episode',
+    'step',
+    'order_start_time',
+    'order_duration',
+    'order_qty',
+    'qty_left',
+    'total_reward',
+    'agent_vwap',
+    'arrival_slippage',
+    'vwap_slippage',
+    'oracle_slippage',
+    'time',
+]
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
@@ -231,6 +248,13 @@ def parse_results_dir(results_dir: pathlib.Path) -> pd.DataFrame:
         train_results['split'] = 'train'
         eval_results['split'] = 'eval'
         results = pd.concat([train_results, eval_results])
+
+        # TODO: Remove once eval.py duplicate heading patch is shipped
+        # keep rows whose first column is NOT the string "global_step"
+        results = results[results['global_step'] != 'global_step']
+        # restore numeric dtypes
+        existing = [c for c in NUMERIC_COLS if c in results.columns]
+        results[existing] = results[existing].apply(pd.to_numeric)
 
         def _recurse_config(config: Dict[str, Any], prefix: str = 'config') -> None:
             for k, v in config.items():
